@@ -270,7 +270,7 @@ let currentLottieInstance = null;
 let currentModalItem = null;
 
 const tasksDB = [
-    { id: 1, name: 'Подписаться на канал KSMT', reward: 43, link: 'https://t.me/KSMT_community', completed: false },
+    { id: 1, name: 'Подписаться на канал KSMT', reward: 5, link: 'https://t.me/KSMT_community', completed: false },
     { id: 2, name: 'Совершить покупку более 215 звезд', reward: 26, link: '#', completed: false },
     { id: 3, name: 'Выиграть в Crash более 5 раз подряд (кф не менее х2)', reward: 17, link: '#', completed: false }
 ];
