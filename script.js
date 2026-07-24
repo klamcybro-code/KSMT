@@ -53,7 +53,7 @@ function checkPin() {
 function updatePinDots(status = '') {
     const dots = document.querySelectorAll('.pin-dots .dot');
     dots.forEach((dot, index) => {
-        dot.classList.remove('filled', 'success', 'error');
+        dot.classList.remove('filled', 'success', 'error', 'shake');
         if (index < pinCode.length) {
             dot.classList.add('filled');
             if (status === 'success') {
@@ -78,41 +78,35 @@ function handlePinInput(value) {
         const savedPin = getPinFromStorage();
         
         if (isFirstLaunch) {
-            // Сохраняем новый PIN — зелёные кружки
             savePin(pinCode);
             updatePinDots('success');
             setTimeout(() => {
                 document.getElementById('pin-screen').style.display = 'none';
                 document.getElementById('app').style.display = 'flex';
                 initApp();
-            }, 400);
+            }, 500);
         } else {
-            // Проверяем PIN
             if (pinCode === savedPin) {
-                // Правильный PIN — зелёные кружки
                 updatePinDots('success');
                 setTimeout(() => {
                     document.getElementById('pin-screen').style.display = 'none';
                     document.getElementById('app').style.display = 'flex';
                     initApp();
-                }, 400);
+                }, 500);
             } else {
-                // Неверный PIN — красные кружки + тряска
                 updatePinDots('error');
                 errorEl.textContent = '❌ Неверный PIN-код';
                 errorEl.classList.add('show');
                 
-                // Тряска кружков
                 document.querySelectorAll('.pin-dots .dot').forEach(dot => {
                     dot.classList.add('shake');
-                    setTimeout(() => dot.classList.remove('shake'), 400);
                 });
                 
                 setTimeout(() => {
                     pinCode = '';
                     updatePinDots('');
                     errorEl.classList.remove('show');
-                }, 600);
+                }, 700);
             }
         }
     }
@@ -152,7 +146,7 @@ if (user) {
 }
 
 // ============================================================
-// 4. NFT DATABASE (сокращённо)
+// 4. NFT DATABASE
 // ============================================================
 let nftDB = [
     {
@@ -645,10 +639,11 @@ function switchPage(page) {
 }
 
 // ============================================================
-// 14. CRASH GAME FUNCTIONS (сокращённо)
+// 14. CRASH GAME FUNCTIONS
 // ============================================================
 function initCrashGame() {
-    // Базовая инициализация
+    // Базовая инициализация игры
+    console.log('Crash Game initialized');
 }
 
 // ============================================================
@@ -687,7 +682,6 @@ function showWithdrawModal() {
         return;
     }
     
-    // Создаём модалку вывода
     const modal = document.createElement('div');
     modal.id = 'withdraw-modal';
     modal.style.cssText = `
@@ -705,9 +699,9 @@ function showWithdrawModal() {
             <div style="margin-bottom: 16px;">
                 <label style="color: #8E8E93; font-size: 13px; font-weight: 500; display: block; margin-bottom: 6px;">Аккаунт</label>
                 <select id="withdraw-account" style="width: 100%; padding: 14px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; color: #fff; font-size: 15px; outline: none;">
-                    <option value="telegram" style="background: #1a1a1a; color: #fff;">Telegram</option>
-                    <option value="tonkeeper" style="background: #1a1a1a; color: #fff;">Tonkeeper</option>
-                    <option value="wallet" style="background: #1a1a1a; color: #fff;">TON Wallet</option>
+                    <option value="Telegram" style="background: #1a1a1a; color: #fff;">Telegram</option>
+                    <option value="Tonkeeper" style="background: #1a1a1a; color: #fff;">Tonkeeper</option>
+                    <option value="TON Wallet" style="background: #1a1a1a; color: #fff;">TON Wallet</option>
                 </select>
             </div>
             
@@ -730,13 +724,11 @@ function showWithdrawModal() {
     
     document.body.appendChild(modal);
     
-    // MAX кнопка
     document.getElementById('withdraw-max-btn').addEventListener('click', function() {
         const input = document.getElementById('withdraw-amount');
         if (input && currentUser) input.value = currentUser.balance;
     });
     
-    // Подтверждение вывода
     document.getElementById('withdraw-confirm-btn').addEventListener('click', function() {
         const amount = parseInt(document.getElementById('withdraw-amount').value);
         const account = document.getElementById('withdraw-account').value;
@@ -759,20 +751,15 @@ function showWithdrawModal() {
             return;
         }
         
-        // Выполняем вывод
         currentUser.balance -= amount;
         currentUser.sales += 1;
         saveDB();
         updateUI();
         
-        // Закрываем модалку
         modal.remove();
-        
-        // Показываем успешное окошко
         showWithdrawSuccess(amount, account);
     });
     
-    // Закрытие
     document.getElementById('withdraw-close-btn').addEventListener('click', function() {
         modal.remove();
     });
@@ -783,7 +770,7 @@ function showWithdrawModal() {
 }
 
 // ============================================================
-// 17. WITHDRAW SUCCESS (Окошко "Выполнено")
+// 17. WITHDRAW SUCCESS
 // ============================================================
 function showWithdrawSuccess(amount, account) {
     const modal = document.createElement('div');
@@ -876,12 +863,10 @@ if (cartBtn) {
 // ============================================================
 // 19. WITHDRAW BUTTON (в профиле)
 // ============================================================
-// Добавляем кнопку вывода в профиль
 const profileCard = document.getElementById('profile-card');
 if (profileCard) {
     const walletBtn = profileCard.querySelector('.wallet-btn');
     if (walletBtn) {
-        // Создаём кнопку вывода
         const withdrawBtn = document.createElement('button');
         withdrawBtn.className = 'wallet-btn';
         withdrawBtn.style.cssText = 'margin-top: 12px; background: linear-gradient(135deg, #FFD700, #FFA500); border: none; color: #000;';
@@ -892,7 +877,7 @@ if (profileCard) {
 }
 
 // ============================================================
-// 20. CONNECT WALLET (TON Connect)
+// 20. CONNECT WALLET
 // ============================================================
 const connectWalletBtn = document.getElementById('connect-wallet-btn');
 if (connectWalletBtn) {
