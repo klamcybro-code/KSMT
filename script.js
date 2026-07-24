@@ -1,3 +1,123 @@
+// ============================================================
+// 1. SPLASH SCREEN (ЗАГРУЗКА)
+// ============================================================
+function showSplash() {
+    const splash = document.getElementById('splash-screen');
+    if (!splash) return;
+    
+    setTimeout(() => {
+        splash.classList.add('fade-out');
+        setTimeout(() => {
+            splash.style.display = 'none';
+            checkPin();
+        }, 800);
+    }, 2200);
+}
+
+// ============================================================
+// 2. PIN CODE SYSTEM
+// ============================================================
+let pinCode = '';
+let isFirstLaunch = false;
+
+function getPinFromStorage() {
+    return localStorage.getItem('ksmt_pin');
+}
+
+function savePin(pin) {
+    localStorage.setItem('ksmt_pin', pin);
+}
+
+function checkPin() {
+    const savedPin = getPinFromStorage();
+    const pinScreen = document.getElementById('pin-screen');
+    const pinTitle = document.getElementById('pin-title');
+    const pinSubtitle = document.getElementById('pin-subtitle');
+    
+    if (savedPin) {
+        pinTitle.textContent = 'Введите PIN-код';
+        pinSubtitle.textContent = 'Для входа в приложение';
+        isFirstLaunch = false;
+    } else {
+        pinTitle.textContent = 'Создайте PIN-код';
+        pinSubtitle.textContent = 'Для защиты вашего аккаунта';
+        isFirstLaunch = true;
+    }
+    
+    pinScreen.style.display = 'flex';
+    pinCode = '';
+    updatePinDots();
+    document.getElementById('pin-error').classList.remove('show');
+}
+
+function updatePinDots() {
+    const dots = document.querySelectorAll('.pin-dots .dot');
+    dots.forEach((dot, index) => {
+        if (index < pinCode.length) {
+            dot.classList.add('filled');
+        } else {
+            dot.classList.remove('filled');
+        }
+    });
+}
+
+function handlePinInput(value) {
+    const errorEl = document.getElementById('pin-error');
+    errorEl.classList.remove('show');
+    
+    if (pinCode.length >= 4) return;
+    
+    pinCode += value;
+    updatePinDots();
+    
+    if (pinCode.length === 4) {
+        const savedPin = getPinFromStorage();
+        
+        if (isFirstLaunch) {
+            savePin(pinCode);
+            setTimeout(() => {
+                document.getElementById('pin-screen').style.display = 'none';
+                document.getElementById('app').style.display = 'flex';
+                initApp();
+            }, 300);
+        } else {
+            if (pinCode === savedPin) {
+                setTimeout(() => {
+                    document.getElementById('pin-screen').style.display = 'none';
+                    document.getElementById('app').style.display = 'flex';
+                    initApp();
+                }, 300);
+            } else {
+                errorEl.textContent = '❌ Неверный PIN-код';
+                errorEl.classList.add('show');
+                document.querySelectorAll('.pin-dots .dot').forEach(dot => {
+                    dot.classList.add('error');
+                });
+                setTimeout(() => {
+                    document.querySelectorAll('.pin-dots .dot').forEach(dot => {
+                        dot.classList.remove('error');
+                    });
+                }, 400);
+                pinCode = '';
+                setTimeout(() => {
+                    updatePinDots();
+                }, 400);
+            }
+        }
+    }
+}
+
+function handlePinDelete() {
+    if (pinCode.length > 0) {
+        pinCode = pinCode.slice(0, -1);
+        updatePinDots();
+        document.getElementById('pin-error').classList.remove('show');
+    }
+}
+
+// ============================================================
+// 3. TELEGRAM WEBAPP & USER
+// ============================================================
 const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
@@ -16,6 +136,9 @@ if (user) {
     }
 }
 
+// ============================================================
+// 4. NFT DATABASE
+// ============================================================
 let nftDB = [
     {
         id: 'signetring-1505',
@@ -127,6 +250,9 @@ let nftDB = [
     }
 ];
 
+// ============================================================
+// 5. USER & STORAGE
+// ============================================================
 let usersDB = [];
 let currentUser = null;
 let cart = [];
@@ -140,6 +266,9 @@ const tasksDB = [
     { id: 3, name: 'Выиграть в Crash более 5 раз подряд (кф не менее х2)', reward: 17, link: '#', completed: false }
 ];
 
+// ============================================================
+// 6. CRASH GAME
+// ============================================================
 let crashGame = {
     isRunning: false,
     currentMultiplier: 1.00,
@@ -156,6 +285,9 @@ let crashGame = {
     ctx: null
 };
 
+// ============================================================
+// 7. DATABASE FUNCTIONS
+// ============================================================
 function loadDB() {
     const saved = localStorage.getItem('ksmt_users');
     if (saved) usersDB = JSON.parse(saved);
@@ -207,6 +339,9 @@ function isInCart(itemId) {
     return cart.some(i => i.id === itemId);
 }
 
+// ============================================================
+// 8. CART FUNCTIONS
+// ============================================================
 function addToCart(itemId, btnElement) {
     if (isInCart(itemId)) {
         removeFromCart(itemId);
@@ -274,6 +409,9 @@ function renderCartModal() {
     });
 }
 
+// ============================================================
+// 9. TASKS
+// ============================================================
 function renderTasks() {
     const tasksList = document.getElementById('tasks-list');
     tasksList.innerHTML = '';
@@ -292,6 +430,9 @@ function renderTasks() {
     });
 }
 
+// ============================================================
+// 10. NFT RENDER
+// ============================================================
 function renderNFTs(filter = '') {
     const grid = document.getElementById('nft-grid');
     if (!grid) return;
@@ -342,23 +483,9 @@ function renderNFTs(filter = '') {
     });
 }
 
-document.getElementById('load-more-btn').addEventListener('click', function() {
-    const btn = this;
-    btn.disabled = true;
-    btn.classList.add('loading');
-    btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Загрузка...';
-    setTimeout(() => {
-        btn.classList.remove('loading');
-        btn.classList.add('error');
-        btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Ошибка подключения';
-        setTimeout(() => {
-            btn.classList.remove('error');
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Загрузить еще';
-        }, 2000);
-    }, 2000);
-});
-
+// ============================================================
+// 11. NFT MODAL
+// ============================================================
 function openNFTModal(id) {
     const item = nftDB.find(i => i.id === id);
     if (!item) return;
@@ -430,6 +557,9 @@ function openNFTModal(id) {
     modal.classList.add('open');
 }
 
+// ============================================================
+// 12. STORAGE
+// ============================================================
 function updateStorageUI() {
     const saleCount = currentUser ? currentUser.inventory.filter(id => nftDB.find(i => i.id === id && i.owner === currentUser.telegramId)).length : 0;
     const storageCount = currentUser ? currentUser.inventory.filter(id => nftDB.find(i => i.id === id && i.owner !== null)).length : 0;
@@ -444,6 +574,9 @@ function updateStorageUI() {
     }
 }
 
+// ============================================================
+// 13. PAGE SWITCHER
+// ============================================================
 function switchPage(page) {
     const marketPage = document.getElementById('market-page');
     const storagePage = document.getElementById('storage-page');
@@ -451,16 +584,13 @@ function switchPage(page) {
     const tasksPage = document.getElementById('tasks-page');
     const searchWrapper = document.getElementById('search-wrapper');
     
-    // Скрываем все
     marketPage.classList.remove('active');
     storagePage.classList.remove('active');
     gamesPage.classList.remove('active');
     tasksPage.classList.remove('active');
     
-    // Показываем нужную
     if (page === 'market') {
         marketPage.classList.add('active');
-        // Принудительно перерисовываем карточки при переходе на маркет
         setTimeout(() => {
             renderNFTs(document.getElementById('search-input').value);
         }, 50);
@@ -480,202 +610,9 @@ function switchPage(page) {
     }
 }
 
-// ========== EVENT LISTENERS ==========
-
-document.getElementById('search-input').addEventListener('input', function() {
-    if (document.getElementById('market-page').classList.contains('active')) {
-        renderNFTs(this.value);
-    }
-});
-
-document.getElementById('avatar-wrapper').addEventListener('click', () => {
-    document.getElementById('profile-modal').classList.add('open');
-});
-
-document.getElementById('close-profile').addEventListener('click', () => {
-    document.getElementById('profile-modal').classList.remove('open');
-});
-
-document.getElementById('close-nft-modal').addEventListener('click', function() {
-    document.getElementById('nft-modal').classList.remove('open');
-    if (currentLottieInstance) {
-        currentLottieInstance.destroy();
-        currentLottieInstance = null;
-    }
-});
-
-document.getElementById('channelBtn').addEventListener('click', () => {
-    window.open('https://t.me/KSMT_community', '_blank');
-});
-
-document.getElementById('cartBtn').addEventListener('click', function() {
-    renderCartModal();
-    document.getElementById('cart-modal').classList.add('open');
-});
-
-// Подключение кошелька
-document.getElementById('connect-wallet-btn').addEventListener('click', () => {
-    document.getElementById('wallet-modal').classList.add('open');
-});
-
-document.getElementById('ton-connect-btn').addEventListener('click', function() {
-    if (window.Telegram?.WebApp) {
-        Telegram.WebApp.openTelegramLink('https://t.me/wallet?attach=connect');
-        document.getElementById('wallet-modal').classList.remove('open');
-        Telegram.WebApp.showAlert('Подключите кошелек в Telegram');
-    } else {
-        if (currentUser) {
-            currentUser.walletConnected = true;
-            saveDB();
-            document.getElementById('wallet-modal').classList.remove('open');
-            alert('✅ Кошелек подключен! (Тестовый режим)');
-            updateUI();
-        }
-    }
-});
-
-document.getElementById('tonkeeper-btn').addEventListener('click', function() {
-    window.open('tonkeeper://', '_blank');
-    document.getElementById('wallet-modal').classList.remove('open');
-    if (window.Telegram?.WebApp) {
-        Telegram.WebApp.showAlert('Откройте Tonkeeper для подключения');
-    }
-});
-
-document.getElementById('close-wallet-modal').addEventListener('click', () => {
-    document.getElementById('wallet-modal').classList.remove('open');
-});
-
-document.getElementById('close-cart-modal').addEventListener('click', () => {
-    document.getElementById('cart-modal').classList.remove('open');
-});
-
-document.getElementById('cart-checkout-btn').addEventListener('click', function() {
-    const total = cart.reduce((sum, item) => sum + item.price, 0);
-    if (currentUser.balance < total) {
-        if (window.Telegram?.WebApp) {
-            Telegram.WebApp.showAlert('Недостаточно средств для покупки');
-        } else {
-            alert('Недостаточно средств для покупки');
-        }
-        return;
-    }
-    
-    currentUser.balance -= total;
-    currentUser.purchases += cart.length;
-    currentUser.inventory.push(...cart.map(i => i.id));
-    saveDB();
-    updateUI();
-    
-    cart = [];
-    updateCartBadge();
-    renderNFTs(document.getElementById('search-input').value);
-    renderCartModal();
-    document.getElementById('cart-modal').classList.remove('open');
-    
-    if (window.Telegram?.WebApp) {
-        Telegram.WebApp.showAlert('Покупка успешно оформлена!');
-    } else {
-        alert('Покупка успешно оформлена!');
-    }
-});
-
-document.querySelectorAll('.nav-item').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-        document.querySelectorAll('.nav-item').forEach(function(b) {
-            b.classList.remove('active');
-        });
-        this.classList.add('active');
-        const page = this.dataset.page;
-        switchPage(page);
-    });
-});
-
-document.querySelectorAll('.storage-tab').forEach(function(tab) {
-    tab.addEventListener('click', function() {
-        document.querySelectorAll('.storage-tab').forEach(function(t) {
-            t.classList.remove('active');
-        });
-        this.classList.add('active');
-        currentStorageTab = this.dataset.tab;
-        updateStorageUI();
-    });
-});
-
-// Banner
-const slider = document.getElementById('bannerSlider');
-const totalOriginal = 2;
-let currentIndex = 0;
-let autoInterval;
-
-if (slider) {
-    function goToNextSlide() {
-        currentIndex++;
-        slider.style.transform = 'translateX(-' + (currentIndex * 100) + '%)';
-        slider.style.transition = 'transform 0.5s ease-in-out';
-        setTimeout(function() {
-            if (currentIndex >= totalOriginal) {
-                slider.style.transition = 'none';
-                currentIndex = 0;
-                slider.style.transform = 'translateX(0)';
-                setTimeout(function() {
-                    if (slider) slider.style.transition = 'transform 0.5s ease-in-out';
-                }, 10);
-            }
-        }, 500);
-    }
-    autoInterval = setInterval(goToNextSlide, 3000);
-}
-
-// Close modals on backdrop click
-document.getElementById('nft-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        document.getElementById('nft-modal').classList.remove('open');
-        if (currentLottieInstance) {
-            currentLottieInstance.destroy();
-            currentLottieInstance = null;
-        }
-    }
-});
-
-document.getElementById('profile-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        document.getElementById('profile-modal').classList.remove('open');
-    }
-});
-
-document.getElementById('wallet-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        document.getElementById('wallet-modal').classList.remove('open');
-    }
-});
-
-document.getElementById('cart-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        document.getElementById('cart-modal').classList.remove('open');
-    }
-});
-
-document.getElementById('how-to-add-btn').addEventListener('click', () => {
-    document.getElementById('how-to-add-modal').classList.add('open');
-});
-
-document.getElementById('close-how-to-add-modal').addEventListener('click', () => {
-    document.getElementById('how-to-add-modal').classList.remove('open');
-});
-
-document.getElementById('go-to-bank-btn').addEventListener('click', () => {
-    window.open('https://t.me/KSMTBank', '_blank');
-});
-
-document.getElementById('how-to-add-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        document.getElementById('how-to-add-modal').classList.remove('open');
-    }
-});
-
-// ========== CRASH GAME ==========
-
+// ============================================================
+// 14. CRASH GAME FUNCTIONS
+// ============================================================
 function initCrashGame() {
     crashGame.canvas = document.getElementById('crash-canvas');
     if (!crashGame.canvas) return;
@@ -944,16 +881,249 @@ function addToHistory(crashPoint) {
     });
 }
 
-// ========== INIT ==========
+// ============================================================
+// 15. LOAD MORE BUTTON
+// ============================================================
+document.getElementById('load-more-btn').addEventListener('click', function() {
+    const btn = this;
+    btn.disabled = true;
+    btn.classList.add('loading');
+    btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Загрузка...';
+    setTimeout(() => {
+        btn.classList.remove('loading');
+        btn.classList.add('error');
+        btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Ошибка подключения';
+        setTimeout(() => {
+            btn.classList.remove('error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Загрузить еще';
+        }, 2000);
+    }, 2000);
+});
 
-// Убеждаемся, что при загрузке страницы карточки отображаются
-loadDB();
-initUser();
-renderNFTs();
-updateCartBadge();
-updateStorageUI();
+// ============================================================
+// 16. EVENT LISTENERS
+// ============================================================
+document.getElementById('search-input').addEventListener('input', function() {
+    if (document.getElementById('market-page').classList.contains('active')) {
+        renderNFTs(this.value);
+    }
+});
 
-// Дополнительно перерисовываем через 100ms, если вдруг не отобразились
-setTimeout(() => {
+document.getElementById('avatar-wrapper').addEventListener('click', () => {
+    document.getElementById('profile-modal').classList.add('open');
+});
+
+document.getElementById('close-profile').addEventListener('click', () => {
+    document.getElementById('profile-modal').classList.remove('open');
+});
+
+document.getElementById('close-nft-modal').addEventListener('click', function() {
+    document.getElementById('nft-modal').classList.remove('open');
+    if (currentLottieInstance) {
+        currentLottieInstance.destroy();
+        currentLottieInstance = null;
+    }
+});
+
+document.getElementById('channelBtn').addEventListener('click', () => {
+    window.open('https://t.me/KSMT_community', '_blank');
+});
+
+document.getElementById('cartBtn').addEventListener('click', function() {
+    renderCartModal();
+    document.getElementById('cart-modal').classList.add('open');
+});
+
+document.getElementById('connect-wallet-btn').addEventListener('click', () => {
+    document.getElementById('wallet-modal').classList.add('open');
+});
+
+document.getElementById('ton-connect-btn').addEventListener('click', function() {
+    if (window.Telegram?.WebApp) {
+        Telegram.WebApp.openTelegramLink('https://t.me/wallet?attach=connect');
+        document.getElementById('wallet-modal').classList.remove('open');
+        Telegram.WebApp.showAlert('Подключите кошелек в Telegram');
+    } else {
+        if (currentUser) {
+            currentUser.walletConnected = true;
+            saveDB();
+            document.getElementById('wallet-modal').classList.remove('open');
+            alert('✅ Кошелек подключен! (Тестовый режим)');
+            updateUI();
+        }
+    }
+});
+
+document.getElementById('tonkeeper-btn').addEventListener('click', function() {
+    window.open('tonkeeper://', '_blank');
+    document.getElementById('wallet-modal').classList.remove('open');
+    if (window.Telegram?.WebApp) {
+        Telegram.WebApp.showAlert('Откройте Tonkeeper для подключения');
+    }
+});
+
+document.getElementById('close-wallet-modal').addEventListener('click', () => {
+    document.getElementById('wallet-modal').classList.remove('open');
+});
+
+document.getElementById('close-cart-modal').addEventListener('click', () => {
+    document.getElementById('cart-modal').classList.remove('open');
+});
+
+document.getElementById('cart-checkout-btn').addEventListener('click', function() {
+    const total = cart.reduce((sum, item) => sum + item.price, 0);
+    if (currentUser.balance < total) {
+        if (window.Telegram?.WebApp) {
+            Telegram.WebApp.showAlert('Недостаточно средств для покупки');
+        } else {
+            alert('Недостаточно средств для покупки');
+        }
+        return;
+    }
+    
+    currentUser.balance -= total;
+    currentUser.purchases += cart.length;
+    currentUser.inventory.push(...cart.map(i => i.id));
+    saveDB();
+    updateUI();
+    
+    cart = [];
+    updateCartBadge();
     renderNFTs(document.getElementById('search-input').value);
-}, 100);
+    renderCartModal();
+    document.getElementById('cart-modal').classList.remove('open');
+    
+    if (window.Telegram?.WebApp) {
+        Telegram.WebApp.showAlert('Покупка успешно оформлена!');
+    } else {
+        alert('Покупка успешно оформлена!');
+    }
+});
+
+document.querySelectorAll('.nav-item').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.nav-item').forEach(function(b) {
+            b.classList.remove('active');
+        });
+        this.classList.add('active');
+        const page = this.dataset.page;
+        switchPage(page);
+    });
+});
+
+document.querySelectorAll('.storage-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.storage-tab').forEach(function(t) {
+            t.classList.remove('active');
+        });
+        this.classList.add('active');
+        currentStorageTab = this.dataset.tab;
+        updateStorageUI();
+    });
+});
+
+document.getElementById('how-to-add-btn').addEventListener('click', () => {
+    document.getElementById('how-to-add-modal').classList.add('open');
+});
+
+document.getElementById('close-how-to-add-modal').addEventListener('click', () => {
+    document.getElementById('how-to-add-modal').classList.remove('open');
+});
+
+document.getElementById('go-to-bank-btn').addEventListener('click', () => {
+    window.open('https://t.me/KSMTBank', '_blank');
+});
+
+document.getElementById('how-to-add-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        document.getElementById('how-to-add-modal').classList.remove('open');
+    }
+});
+
+// ============================================================
+// 17. BANNER
+// ============================================================
+const slider = document.getElementById('bannerSlider');
+const totalOriginal = 2;
+let currentIndex = 0;
+let autoInterval;
+
+if (slider) {
+    function goToNextSlide() {
+        currentIndex++;
+        slider.style.transform = 'translateX(-' + (currentIndex * 100) + '%)';
+        slider.style.transition = 'transform 0.5s ease-in-out';
+        setTimeout(function() {
+            if (currentIndex >= totalOriginal) {
+                slider.style.transition = 'none';
+                currentIndex = 0;
+                slider.style.transform = 'translateX(0)';
+                setTimeout(function() {
+                    if (slider) slider.style.transition = 'transform 0.5s ease-in-out';
+                }, 10);
+            }
+        }, 500);
+    }
+    autoInterval = setInterval(goToNextSlide, 3000);
+}
+
+// ============================================================
+// 18. CLOSE MODALS ON BACKDROP
+// ============================================================
+document.getElementById('nft-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        document.getElementById('nft-modal').classList.remove('open');
+        if (currentLottieInstance) {
+            currentLottieInstance.destroy();
+            currentLottieInstance = null;
+        }
+    }
+});
+
+document.getElementById('profile-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        document.getElementById('profile-modal').classList.remove('open');
+    }
+});
+
+document.getElementById('wallet-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        document.getElementById('wallet-modal').classList.remove('open');
+    }
+});
+
+document.getElementById('cart-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        document.getElementById('cart-modal').classList.remove('open');
+    }
+});
+
+// ============================================================
+// 19. PIN EVENT LISTENERS
+// ============================================================
+document.querySelectorAll('.pin-key[data-value]').forEach(btn => {
+    btn.addEventListener('click', function() {
+        handlePinInput(this.dataset.value);
+    });
+});
+
+document.getElementById('pin-delete').addEventListener('click', handlePinDelete);
+
+// ============================================================
+// 20. INIT APP
+// ============================================================
+function initApp() {
+    loadDB();
+    initUser();
+    renderNFTs();
+    updateCartBadge();
+    updateStorageUI();
+}
+
+// ============================================================
+// 21. START — SHOW SPLASH FIRST
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+    showSplash();
+});
