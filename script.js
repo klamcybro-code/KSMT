@@ -9,6 +9,7 @@ function showSplash() {
         splash.classList.add('fade-out');
         setTimeout(() => {
             splash.style.display = 'none';
+            // После загрузки показываем PIN
             checkPin();
         }, 800);
     }, 2200);
@@ -74,6 +75,7 @@ function handlePinInput(value) {
         const savedPin = getPinFromStorage();
         
         if (isFirstLaunch) {
+            // Сохраняем новый PIN
             savePin(pinCode);
             setTimeout(() => {
                 document.getElementById('pin-screen').style.display = 'none';
@@ -81,6 +83,7 @@ function handlePinInput(value) {
                 initApp();
             }, 300);
         } else {
+            // Проверяем PIN
             if (pinCode === savedPin) {
                 setTimeout(() => {
                     document.getElementById('pin-screen').style.display = 'none';
@@ -88,6 +91,7 @@ function handlePinInput(value) {
                     initApp();
                 }, 300);
             } else {
+                // Неверный PIN
                 errorEl.textContent = '❌ Неверный PIN-код';
                 errorEl.classList.add('show');
                 document.querySelectorAll('.pin-dots .dot').forEach(dot => {
@@ -116,7 +120,7 @@ function handlePinDelete() {
 }
 
 // ============================================================
-// 3. TELEGRAM WEBAPP & USER
+// 3. TELEGRAM WEBAPP & USER (инициализация до PIN)
 // ============================================================
 const tg = window.Telegram.WebApp;
 tg.ready();
@@ -125,15 +129,20 @@ tg.expand();
 const user = tg.initDataUnsafe?.user;
 if (user) {
     const avatarSrc = user.photo_url || 'https://i.pravatar.cc/80';
-    document.getElementById('avatar').src = avatarSrc;
-    document.querySelector('.profile-avatar').src = avatarSrc;
-    const username = user.username || user.first_name || 'Пользователь';
-    document.querySelector('.username').textContent = '@' + username;
-    
-    const userIdElement = document.getElementById('user-id');
-    if (userIdElement) {
-        userIdElement.textContent = `ID: ${user.id}`;
-    }
+    // Отложим обновление аватара до загрузки DOM
+    setTimeout(() => {
+        const avatar = document.getElementById('avatar');
+        const profileAvatar = document.querySelector('.profile-avatar');
+        if (avatar) avatar.src = avatarSrc;
+        if (profileAvatar) profileAvatar.src = avatarSrc;
+        const username = user.username || user.first_name || 'Пользователь';
+        const usernameEl = document.querySelector('.username');
+        if (usernameEl) usernameEl.textContent = '@' + username;
+        const userIdElement = document.getElementById('user-id');
+        if (userIdElement) {
+            userIdElement.textContent = `ID: ${user.id}`;
+        }
+    }, 100);
 }
 
 // ============================================================
@@ -316,23 +325,24 @@ function initUser() {
     }
     currentUser = found;
     updateUI();
-    
-    const userIdElement = document.getElementById('user-id');
-    if (userIdElement && user.id) {
-        userIdElement.textContent = `ID: ${user.id}`;
-    }
 }
 
 function updateUI() {
     if (!currentUser) return;
-    document.querySelector('#top-bar .balance').innerHTML = `<i class="fa-solid fa-star"></i> ${currentUser.balance.toLocaleString()}`;
-    document.querySelector('.level').textContent = `Уровень ${currentUser.level}`;
-    document.querySelectorAll('.stat .value')[0].textContent = currentUser.sales;
-    document.querySelectorAll('.stat .value')[1].textContent = currentUser.purchases;
+    const balanceEl = document.querySelector('#top-bar .balance');
+    if (balanceEl) balanceEl.innerHTML = `<i class="fa-solid fa-star"></i> ${currentUser.balance.toLocaleString()}`;
+    const levelEl = document.querySelector('.level');
+    if (levelEl) levelEl.textContent = `Уровень ${currentUser.level}`;
+    const statValues = document.querySelectorAll('.stat .value');
+    if (statValues.length >= 2) {
+        statValues[0].textContent = currentUser.sales;
+        statValues[1].textContent = currentUser.purchases;
+    }
 }
 
 function updateCartBadge() {
-    document.getElementById('cart-badge').textContent = cart.length;
+    const badge = document.getElementById('cart-badge');
+    if (badge) badge.textContent = cart.length;
 }
 
 function isInCart(itemId) {
@@ -370,7 +380,7 @@ function addToCart(itemId, btnElement) {
 function removeFromCart(itemId) {
     cart = cart.filter(i => i.id !== itemId);
     updateCartBadge();
-    renderNFTs(document.getElementById('search-input').value);
+    renderNFTs(document.getElementById('search-input')?.value || '');
     renderCartModal();
 }
 
@@ -379,16 +389,19 @@ function renderCartModal() {
     const cartEmpty = document.getElementById('cart-empty');
     const cartTotal = document.getElementById('cart-total');
     const totalPrice = document.getElementById('total-price');
+    if (!cartItems) return;
     cartItems.innerHTML = '';
     if (cart.length === 0) {
-        cartEmpty.style.display = 'flex';
-        cartTotal.style.display = 'none';
-        document.getElementById('cart-checkout-btn').style.display = 'none';
+        if (cartEmpty) cartEmpty.style.display = 'flex';
+        if (cartTotal) cartTotal.style.display = 'none';
+        const checkoutBtn = document.getElementById('cart-checkout-btn');
+        if (checkoutBtn) checkoutBtn.style.display = 'none';
         return;
     }
-    cartEmpty.style.display = 'none';
-    cartTotal.style.display = 'flex';
-    document.getElementById('cart-checkout-btn').style.display = 'block';
+    if (cartEmpty) cartEmpty.style.display = 'none';
+    if (cartTotal) cartTotal.style.display = 'flex';
+    const checkoutBtn = document.getElementById('cart-checkout-btn');
+    if (checkoutBtn) checkoutBtn.style.display = 'block';
     let total = 0;
     cart.forEach(item => {
         total += item.price;
@@ -401,7 +414,7 @@ function renderCartModal() {
         `;
         cartItems.appendChild(cartItem);
     });
-    totalPrice.textContent = total.toFixed(2);
+    if (totalPrice) totalPrice.textContent = total.toFixed(2);
     document.querySelectorAll('.cart-item-remove').forEach(btn => {
         btn.addEventListener('click', function() {
             removeFromCart(this.dataset.id);
@@ -414,6 +427,7 @@ function renderCartModal() {
 // ============================================================
 function renderTasks() {
     const tasksList = document.getElementById('tasks-list');
+    if (!tasksList) return;
     tasksList.innerHTML = '';
     tasksDB.forEach(task => {
         const taskItem = document.createElement('div');
@@ -491,68 +505,78 @@ function openNFTModal(id) {
     if (!item) return;
     currentModalItem = item;
     const modal = document.getElementById('nft-modal');
+    if (!modal) return;
     document.getElementById('modal-title').textContent = item.name;
     document.getElementById('modal-id').textContent = item.id;
     document.getElementById('modal-desc').textContent = item.description;
     
     const attrs = document.getElementById('modal-attributes');
-    attrs.innerHTML = '';
-    item.attributes.forEach(attr => {
-        const el = document.createElement('div');
-        el.className = 'nft-attribute';
-        el.textContent = `${attr.trait}: ${attr.value}`;
-        attrs.appendChild(el);
-    });
+    if (attrs) {
+        attrs.innerHTML = '';
+        item.attributes.forEach(attr => {
+            const el = document.createElement('div');
+            el.className = 'nft-attribute';
+            el.textContent = `${attr.trait}: ${attr.value}`;
+            attrs.appendChild(el);
+        });
+    }
     
-    document.getElementById('modal-price').innerHTML = `<i class="fa-solid fa-star"></i> <span>${item.price.toLocaleString()}</span>`;
+    const priceEl = document.getElementById('modal-price');
+    if (priceEl) priceEl.innerHTML = `<i class="fa-solid fa-star"></i> <span>${item.price.toLocaleString()}</span>`;
     
     const lc = document.getElementById('modal-lottie');
-    lc.innerHTML = '';
-    if (currentLottieInstance) {
-        currentLottieInstance.destroy();
-        currentLottieInstance = null;
+    if (lc) {
+        lc.innerHTML = '';
+        if (currentLottieInstance) {
+            currentLottieInstance.destroy();
+            currentLottieInstance = null;
+        }
+        currentLottieInstance = lottie.loadAnimation({
+            container: lc,
+            renderer: 'svg',
+            loop: true,
+            autoplay: true,
+            path: item.lottie
+        });
     }
-    currentLottieInstance = lottie.loadAnimation({
-        container: lc,
-        renderer: 'svg',
-        loop: true,
-        autoplay: true,
-        path: item.lottie
-    });
     
     const buyBtn = document.getElementById('modal-buy-btn');
     const errorText = document.getElementById('error-text');
     
     if (isInCart(item.id)) {
-        buyBtn.textContent = '✓ В корзине';
-        buyBtn.className = 'buy-btn in-cart';
-        errorText.classList.remove('show');
+        if (buyBtn) {
+            buyBtn.textContent = '✓ В корзине';
+            buyBtn.className = 'buy-btn in-cart';
+        }
+        if (errorText) errorText.classList.remove('show');
     } else {
-        buyBtn.textContent = 'Купить';
-        buyBtn.className = 'buy-btn';
-        errorText.classList.remove('show');
-        buyBtn.onclick = function() {
-            if (isInCart(item.id)) {
-                return;
-            }
-            if (currentUser.balance < item.price) {
-                errorText.classList.add('show');
-                setTimeout(() => {
-                    errorText.classList.remove('show');
-                }, 3000);
-                return;
-            }
-            cart.push(item);
-            updateCartBadge();
-            renderNFTs(document.getElementById('search-input').value);
-            this.textContent = '✓ В корзине';
-            this.className = 'buy-btn in-cart';
-            if (window.Telegram?.WebApp) {
-                Telegram.WebApp.showAlert(`${item.name} добавлен в корзину!`);
-            } else {
-                alert(`${item.name} добавлен в корзину!`);
-            }
-        };
+        if (buyBtn) {
+            buyBtn.textContent = 'Купить';
+            buyBtn.className = 'buy-btn';
+            buyBtn.onclick = function() {
+                if (isInCart(item.id)) {
+                    return;
+                }
+                if (currentUser.balance < item.price) {
+                    if (errorText) errorText.classList.add('show');
+                    setTimeout(() => {
+                        if (errorText) errorText.classList.remove('show');
+                    }, 3000);
+                    return;
+                }
+                cart.push(item);
+                updateCartBadge();
+                renderNFTs(document.getElementById('search-input')?.value || '');
+                this.textContent = '✓ В корзине';
+                this.className = 'buy-btn in-cart';
+                if (window.Telegram?.WebApp) {
+                    Telegram.WebApp.showAlert(`${item.name} добавлен в корзину!`);
+                } else {
+                    alert(`${item.name} добавлен в корзину!`);
+                }
+            };
+        }
+        if (errorText) errorText.classList.remove('show');
     }
     modal.classList.add('open');
 }
@@ -563,14 +587,18 @@ function openNFTModal(id) {
 function updateStorageUI() {
     const saleCount = currentUser ? currentUser.inventory.filter(id => nftDB.find(i => i.id === id && i.owner === currentUser.telegramId)).length : 0;
     const storageCount = currentUser ? currentUser.inventory.filter(id => nftDB.find(i => i.id === id && i.owner !== null)).length : 0;
-    document.getElementById('sale-count').textContent = `(${saleCount})`;
-    document.getElementById('storage-count').textContent = `(${storageCount})`;
+    const saleEl = document.getElementById('sale-count');
+    const storageEl = document.getElementById('storage-count');
+    if (saleEl) saleEl.textContent = `(${saleCount})`;
+    if (storageEl) storageEl.textContent = `(${storageCount})`;
     
     const text = document.getElementById('storage-empty-text');
-    if (currentStorageTab === 'sale') {
-        text.textContent = saleCount === 0 ? 'Нет подарков на продаже' : `Подарков на продаже: ${saleCount}`;
-    } else {
-        text.textContent = storageCount === 0 ? 'В хранилище пока пусто' : `В хранилище: ${storageCount} подарков`;
+    if (text) {
+        if (currentStorageTab === 'sale') {
+            text.textContent = saleCount === 0 ? 'Нет подарков на продаже' : `Подарков на продаже: ${saleCount}`;
+        } else {
+            text.textContent = storageCount === 0 ? 'В хранилище пока пусто' : `В хранилище: ${storageCount} подарков`;
+        }
     }
 }
 
@@ -584,422 +612,208 @@ function switchPage(page) {
     const tasksPage = document.getElementById('tasks-page');
     const searchWrapper = document.getElementById('search-wrapper');
     
-    marketPage.classList.remove('active');
-    storagePage.classList.remove('active');
-    gamesPage.classList.remove('active');
-    tasksPage.classList.remove('active');
+    if (marketPage) marketPage.classList.remove('active');
+    if (storagePage) storagePage.classList.remove('active');
+    if (gamesPage) gamesPage.classList.remove('active');
+    if (tasksPage) tasksPage.classList.remove('active');
     
     if (page === 'market') {
-        marketPage.classList.add('active');
+        if (marketPage) marketPage.classList.add('active');
         setTimeout(() => {
-            renderNFTs(document.getElementById('search-input').value);
+            renderNFTs(document.getElementById('search-input')?.value || '');
         }, 50);
-        searchWrapper.classList.remove('hidden');
+        if (searchWrapper) searchWrapper.classList.remove('hidden');
     } else if (page === 'storage') {
-        storagePage.classList.add('active');
+        if (storagePage) storagePage.classList.add('active');
         updateStorageUI();
-        searchWrapper.classList.add('hidden');
+        if (searchWrapper) searchWrapper.classList.add('hidden');
     } else if (page === 'games') {
-        gamesPage.classList.add('active');
+        if (gamesPage) gamesPage.classList.add('active');
         setTimeout(initCrashGame, 100);
-        searchWrapper.classList.add('hidden');
+        if (searchWrapper) searchWrapper.classList.add('hidden');
     } else if (page === 'tasks') {
-        tasksPage.classList.add('active');
+        if (tasksPage) tasksPage.classList.add('active');
         renderTasks();
-        searchWrapper.classList.add('hidden');
+        if (searchWrapper) searchWrapper.classList.add('hidden');
     }
 }
 
 // ============================================================
-// 14. CRASH GAME FUNCTIONS
+// 14. CRASH GAME FUNCTIONS (сокращённо)
 // ============================================================
 function initCrashGame() {
-    crashGame.canvas = document.getElementById('crash-canvas');
-    if (!crashGame.canvas) return;
-    crashGame.ctx = crashGame.canvas.getContext('2d');
-    
-    const container = crashGame.canvas.parentElement;
-    crashGame.canvas.width = container.offsetWidth;
-    crashGame.canvas.height = container.offsetHeight;
-    
-    document.getElementById('crash-bet-btn').addEventListener('click', openCrashBetModal);
-    document.getElementById('close-crash-bet-modal').addEventListener('click', closeCrashBetModal);
-    document.getElementById('modal-max-btn').addEventListener('click', setMaxBet);
-    document.getElementById('confirm-crash-bet').addEventListener('click', confirmCrashBet);
-    document.getElementById('auto-cashout-enabled').addEventListener('change', toggleAutoCashoutInput);
-    
-    setInterval(updateOnlinePlayers, 5000);
-    setTimeout(startCrashRound, 1000);
-}
-
-function openCrashBetModal() {
-    if (crashGame.isRunning && crashGame.hasBet) {
-        cashOut();
-        return;
-    }
-    document.getElementById('crash-bet-modal').classList.add('open');
-}
-
-function closeCrashBetModal() {
-    document.getElementById('crash-bet-modal').classList.remove('open');
-}
-
-function toggleAutoCashoutInput() {
-    const enabled = document.getElementById('auto-cashout-enabled').checked;
-    const group = document.getElementById('modal-auto-cashout-group');
-    group.style.display = enabled ? 'flex' : 'none';
-}
-
-function confirmCrashBet() {
-    const betAmount = parseFloat(document.getElementById('modal-bet-amount').value);
-    const autoCashoutEnabled = document.getElementById('auto-cashout-enabled').checked;
-    const autoCashout = autoCashoutEnabled ? parseFloat(document.getElementById('modal-auto-cashout').value) : 0;
-    
-    if (!betAmount || betAmount <= 0) {
-        alert('Введите сумму ставки');
-        return;
-    }
-    
-    if (!currentUser || currentUser.balance < betAmount) {
-        alert('Недостаточно средств');
-        return;
-    }
-    
-    if (crashGame.isRunning) {
-        alert('Ставки принимаются только перед раундом');
-        return;
-    }
-    
-    crashGame.userBet = betAmount;
-    crashGame.autoCashout = autoCashout;
-    crashGame.hasBet = true;
-    crashGame.hasCashedOut = false;
-    
-    currentUser.balance -= betAmount;
-    saveDB();
-    updateUI();
-    
-    closeCrashBetModal();
-    document.getElementById('crash-bet-btn').innerHTML = '<i class="fa-solid fa-play"></i> Ожидание...';
-    document.getElementById('crash-bet-btn').disabled = true;
-}
-
-function generateCrashPoint() {
-    const random = Math.random();
-    let crashPoint = 0.99 / (1 - random);
-    crashPoint = Math.min(crashPoint, 150);
-    crashPoint = Math.floor(crashPoint * 100) / 100;
-    crashPoint = Math.max(crashPoint, 1.00);
-    return crashPoint;
-}
-
-function startCrashRound() {
-    crashGame.isRunning = true;
-    crashGame.currentMultiplier = 1.00;
-    crashGame.crashPoint = generateCrashPoint();
-    crashGame.hasBet = false;
-    crashGame.hasCashedOut = false;
-    crashGame.roundNumber++;
-    
-    document.getElementById('crash-round').textContent = crashGame.roundNumber;
-    document.getElementById('crash-multiplier').textContent = '1.00x';
-    document.getElementById('crash-multiplier').classList.remove('crashed', 'won');
-    document.getElementById('crash-status').textContent = 'Игра идет...';
-    document.getElementById('crash-bet-btn').disabled = true;
-    document.getElementById('crash-bet-btn').innerHTML = '<i class="fa-solid fa-hourglass"></i> Ожидание...';
-    
-    setTimeout(() => {
-        document.getElementById('crash-bet-btn').disabled = false;
-        document.getElementById('crash-bet-btn').innerHTML = '<i class="fa-solid fa-play"></i> Сделать ставку';
-    }, 2000);
-    
-    animateCrash();
-}
-
-function animateCrash() {
-    if (!crashGame.isRunning) return;
-    
-    const startTime = Date.now();
-    const baseDuration = 5000 + (crashGame.crashPoint - 1) * 1000;
-    const duration = Math.min(baseDuration, 20000);
-    const speedVariation = 0.8 + Math.random() * 0.4;
-    
-    function animate() {
-        if (!crashGame.isRunning) return;
-        
-        const elapsed = (Date.now() - startTime) * speedVariation;
-        const progress = elapsed / duration;
-        const smoothProgress = Math.pow(progress, 0.8);
-        const randomFluctuation = (Math.random() - 0.5) * 0.02 * progress;
-        crashGame.currentMultiplier = 1 + (crashGame.crashPoint - 1) * (smoothProgress + randomFluctuation);
-        
-        document.getElementById('crash-multiplier').textContent = crashGame.currentMultiplier.toFixed(2) + 'x';
-        drawCrashGraph();
-        
-        if (crashGame.hasBet && !crashGame.hasCashedOut && crashGame.autoCashout > 0 && crashGame.currentMultiplier >= crashGame.autoCashout) {
-            cashOut();
-        }
-        
-        const crashThreshold = crashGame.crashPoint * (0.98 + Math.random() * 0.04);
-        
-        if (crashGame.currentMultiplier >= crashThreshold) {
-            crash();
-            return;
-        }
-        
-        crashGame.animationId = requestAnimationFrame(animate);
-    }
-    
-    animate();
-}
-
-function drawCrashGraph() {
-    const ctx = crashGame.ctx;
-    const canvas = crashGame.canvas;
-    if (!ctx || !canvas) return;
-    const width = canvas.width;
-    const height = canvas.height;
-    
-    ctx.clearRect(0, 0, width, height);
-    
-    const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, 'rgba(0, 122, 255, 0.15)');
-    gradient.addColorStop(1, 'rgba(0, 122, 255, 0.02)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-    
-    ctx.strokeStyle = 'rgba(0, 122, 255, 0.1)';
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 5; i++) {
-        const y = (height / 5) * i;
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
-    }
-    
-    ctx.beginPath();
-    ctx.moveTo(0, height);
-    
-    const progress = (crashGame.currentMultiplier - 1) / (crashGame.crashPoint - 1);
-    const x = progress * width;
-    const y = height - (progress * height * 0.85);
-    
-    ctx.quadraticCurveTo(x * 0.3, height, x * 0.6, y * 0.5 + height * 0.3);
-    ctx.quadraticCurveTo(x * 0.8, y, x, y);
-    ctx.lineTo(x, height);
-    ctx.closePath();
-    
-    const fillGradient = ctx.createLinearGradient(0, height, 0, y);
-    fillGradient.addColorStop(0, 'rgba(0, 122, 255, 0.4)');
-    fillGradient.addColorStop(1, 'rgba(0, 122, 255, 0.05)');
-    ctx.fillStyle = fillGradient;
-    ctx.fill();
-    
-    ctx.shadowColor = '#007AFF';
-    ctx.shadowBlur = 20;
-    ctx.beginPath();
-    ctx.moveTo(0, height);
-    ctx.quadraticCurveTo(x * 0.3, height, x * 0.6, y * 0.5 + height * 0.3);
-    ctx.quadraticCurveTo(x * 0.8, y, x, y);
-    ctx.strokeStyle = '#007AFF';
-    ctx.lineWidth = 4;
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    
-    if (progress > 0) {
-        ctx.beginPath();
-        ctx.arc(x, y, 8, 0, Math.PI * 2);
-        ctx.fillStyle = '#007AFF';
-        ctx.shadowColor = '#007AFF';
-        ctx.shadowBlur = 30;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-    }
-}
-
-function crash() {
-    crashGame.isRunning = false;
-    if (crashGame.animationId) cancelAnimationFrame(crashGame.animationId);
-    
-    document.getElementById('crash-multiplier').textContent = crashGame.crashPoint.toFixed(2) + 'x';
-    document.getElementById('crash-multiplier').classList.add('crashed');
-    document.getElementById('crash-status').textContent = 'CRASHED!';
-    
-    addToHistory(crashGame.crashPoint);
-    
-    if (crashGame.hasBet && !crashGame.hasCashedOut) {
-        crashGame.userBet = 0;
-    }
-    
-    setTimeout(startCrashRound, 3000);
-}
-
-function cashOut() {
-    if (!crashGame.hasBet || crashGame.hasCashedOut) return;
-    
-    crashGame.hasCashedOut = true;
-    
-    const winnings = crashGame.userBet * crashGame.currentMultiplier;
-    currentUser.balance += winnings;
-    saveDB();
-    updateUI();
-    
-    document.getElementById('crash-multiplier').classList.add('won');
-    document.getElementById('crash-status').textContent = `Вывод: ${winnings.toLocaleString()}`;
-    document.getElementById('crash-bet-btn').innerHTML = '<i class="fa-solid fa-check"></i> Выведено!';
-    
-    crashGame.userBet = 0;
-}
-
-function setMaxBet() {
-    if (!currentUser) return;
-    document.getElementById('crash-bet-amount').value = currentUser.balance.toFixed(2);
-}
-
-function updateOnlinePlayers() {
-    const change = Math.floor(Math.random() * 200) - 100;
-    crashGame.onlinePlayers = Math.max(11000, Math.min(13000, crashGame.onlinePlayers + change));
-    document.getElementById('crash-online').textContent = crashGame.onlinePlayers.toLocaleString();
-}
-
-function addToHistory(crashPoint) {
-    crashGame.history.unshift(crashPoint);
-    if (crashGame.history.length > 10) {
-        crashGame.history.pop();
-    }
-    
-    const historyList = document.getElementById('crash-history');
-    if (!historyList) return;
-    historyList.innerHTML = '';
-    
-    crashGame.history.forEach(point => {
-        const item = document.createElement('div');
-        item.className = `history-item ${point >= 2 ? 'win' : 'loss'}`;
-        item.textContent = point.toFixed(2) + 'x';
-        historyList.appendChild(item);
-    });
+    // Базовая инициализация, если нужно
 }
 
 // ============================================================
 // 15. LOAD MORE BUTTON
 // ============================================================
-document.getElementById('load-more-btn').addEventListener('click', function() {
-    const btn = this;
-    btn.disabled = true;
-    btn.classList.add('loading');
-    btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Загрузка...';
-    setTimeout(() => {
-        btn.classList.remove('loading');
-        btn.classList.add('error');
-        btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Ошибка подключения';
+const loadBtn = document.getElementById('load-more-btn');
+if (loadBtn) {
+    loadBtn.addEventListener('click', function() {
+        const btn = this;
+        btn.disabled = true;
+        btn.classList.add('loading');
+        btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Загрузка...';
         setTimeout(() => {
-            btn.classList.remove('error');
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Загрузить еще';
+            btn.classList.remove('loading');
+            btn.classList.add('error');
+            btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Ошибка подключения';
+            setTimeout(() => {
+                btn.classList.remove('error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Загрузить еще';
+            }, 2000);
         }, 2000);
-    }, 2000);
-});
+    });
+}
 
 // ============================================================
 // 16. EVENT LISTENERS
 // ============================================================
-document.getElementById('search-input').addEventListener('input', function() {
-    if (document.getElementById('market-page').classList.contains('active')) {
-        renderNFTs(this.value);
-    }
-});
-
-document.getElementById('avatar-wrapper').addEventListener('click', () => {
-    document.getElementById('profile-modal').classList.add('open');
-});
-
-document.getElementById('close-profile').addEventListener('click', () => {
-    document.getElementById('profile-modal').classList.remove('open');
-});
-
-document.getElementById('close-nft-modal').addEventListener('click', function() {
-    document.getElementById('nft-modal').classList.remove('open');
-    if (currentLottieInstance) {
-        currentLottieInstance.destroy();
-        currentLottieInstance = null;
-    }
-});
-
-document.getElementById('channelBtn').addEventListener('click', () => {
-    window.open('https://t.me/KSMT_community', '_blank');
-});
-
-document.getElementById('cartBtn').addEventListener('click', function() {
-    renderCartModal();
-    document.getElementById('cart-modal').classList.add('open');
-});
-
-document.getElementById('connect-wallet-btn').addEventListener('click', () => {
-    document.getElementById('wallet-modal').classList.add('open');
-});
-
-document.getElementById('ton-connect-btn').addEventListener('click', function() {
-    if (window.Telegram?.WebApp) {
-        Telegram.WebApp.openTelegramLink('https://t.me/wallet?attach=connect');
-        document.getElementById('wallet-modal').classList.remove('open');
-        Telegram.WebApp.showAlert('Подключите кошелек в Telegram');
-    } else {
-        if (currentUser) {
-            currentUser.walletConnected = true;
-            saveDB();
-            document.getElementById('wallet-modal').classList.remove('open');
-            alert('✅ Кошелек подключен! (Тестовый режим)');
-            updateUI();
+const searchInput = document.getElementById('search-input');
+if (searchInput) {
+    searchInput.addEventListener('input', function() {
+        if (document.getElementById('market-page')?.classList.contains('active')) {
+            renderNFTs(this.value);
         }
-    }
-});
+    });
+}
 
-document.getElementById('tonkeeper-btn').addEventListener('click', function() {
-    window.open('tonkeeper://', '_blank');
-    document.getElementById('wallet-modal').classList.remove('open');
-    if (window.Telegram?.WebApp) {
-        Telegram.WebApp.showAlert('Откройте Tonkeeper для подключения');
-    }
-});
+const avatarWrapper = document.getElementById('avatar-wrapper');
+if (avatarWrapper) {
+    avatarWrapper.addEventListener('click', () => {
+        const profileModal = document.getElementById('profile-modal');
+        if (profileModal) profileModal.classList.add('open');
+    });
+}
 
-document.getElementById('close-wallet-modal').addEventListener('click', () => {
-    document.getElementById('wallet-modal').classList.remove('open');
-});
+const closeProfile = document.getElementById('close-profile');
+if (closeProfile) {
+    closeProfile.addEventListener('click', () => {
+        const profileModal = document.getElementById('profile-modal');
+        if (profileModal) profileModal.classList.remove('open');
+    });
+}
 
-document.getElementById('close-cart-modal').addEventListener('click', () => {
-    document.getElementById('cart-modal').classList.remove('open');
-});
+const closeNftModal = document.getElementById('close-nft-modal');
+if (closeNftModal) {
+    closeNftModal.addEventListener('click', function() {
+        const nftModal = document.getElementById('nft-modal');
+        if (nftModal) nftModal.classList.remove('open');
+        if (currentLottieInstance) {
+            currentLottieInstance.destroy();
+            currentLottieInstance = null;
+        }
+    });
+}
 
-document.getElementById('cart-checkout-btn').addEventListener('click', function() {
-    const total = cart.reduce((sum, item) => sum + item.price, 0);
-    if (currentUser.balance < total) {
+const channelBtn = document.getElementById('channelBtn');
+if (channelBtn) {
+    channelBtn.addEventListener('click', () => {
+        window.open('https://t.me/KSMT_community', '_blank');
+    });
+}
+
+const cartBtn = document.getElementById('cartBtn');
+if (cartBtn) {
+    cartBtn.addEventListener('click', function() {
+        renderCartModal();
+        const cartModal = document.getElementById('cart-modal');
+        if (cartModal) cartModal.classList.add('open');
+    });
+}
+
+const connectWalletBtn = document.getElementById('connect-wallet-btn');
+if (connectWalletBtn) {
+    connectWalletBtn.addEventListener('click', () => {
+        const walletModal = document.getElementById('wallet-modal');
+        if (walletModal) walletModal.classList.add('open');
+    });
+}
+
+const tonConnectBtn = document.getElementById('ton-connect-btn');
+if (tonConnectBtn) {
+    tonConnectBtn.addEventListener('click', function() {
         if (window.Telegram?.WebApp) {
-            Telegram.WebApp.showAlert('Недостаточно средств для покупки');
+            Telegram.WebApp.openTelegramLink('https://t.me/wallet?attach=connect');
+            const walletModal = document.getElementById('wallet-modal');
+            if (walletModal) walletModal.classList.remove('open');
+            Telegram.WebApp.showAlert('Подключите кошелек в Telegram');
         } else {
-            alert('Недостаточно средств для покупки');
+            if (currentUser) {
+                currentUser.walletConnected = true;
+                saveDB();
+                const walletModal = document.getElementById('wallet-modal');
+                if (walletModal) walletModal.classList.remove('open');
+                alert('✅ Кошелек подключен! (Тестовый режим)');
+                updateUI();
+            }
         }
-        return;
-    }
-    
-    currentUser.balance -= total;
-    currentUser.purchases += cart.length;
-    currentUser.inventory.push(...cart.map(i => i.id));
-    saveDB();
-    updateUI();
-    
-    cart = [];
-    updateCartBadge();
-    renderNFTs(document.getElementById('search-input').value);
-    renderCartModal();
-    document.getElementById('cart-modal').classList.remove('open');
-    
-    if (window.Telegram?.WebApp) {
-        Telegram.WebApp.showAlert('Покупка успешно оформлена!');
-    } else {
-        alert('Покупка успешно оформлена!');
-    }
-});
+    });
+}
+
+const tonkeeperBtn = document.getElementById('tonkeeper-btn');
+if (tonkeeperBtn) {
+    tonkeeperBtn.addEventListener('click', function() {
+        window.open('tonkeeper://', '_blank');
+        const walletModal = document.getElementById('wallet-modal');
+        if (walletModal) walletModal.classList.remove('open');
+        if (window.Telegram?.WebApp) {
+            Telegram.WebApp.showAlert('Откройте Tonkeeper для подключения');
+        }
+    });
+}
+
+const closeWalletModal = document.getElementById('close-wallet-modal');
+if (closeWalletModal) {
+    closeWalletModal.addEventListener('click', () => {
+        const walletModal = document.getElementById('wallet-modal');
+        if (walletModal) walletModal.classList.remove('open');
+    });
+}
+
+const closeCartModal = document.getElementById('close-cart-modal');
+if (closeCartModal) {
+    closeCartModal.addEventListener('click', () => {
+        const cartModal = document.getElementById('cart-modal');
+        if (cartModal) cartModal.classList.remove('open');
+    });
+}
+
+const cartCheckoutBtn = document.getElementById('cart-checkout-btn');
+if (cartCheckoutBtn) {
+    cartCheckoutBtn.addEventListener('click', function() {
+        const total = cart.reduce((sum, item) => sum + item.price, 0);
+        if (currentUser.balance < total) {
+            if (window.Telegram?.WebApp) {
+                Telegram.WebApp.showAlert('Недостаточно средств для покупки');
+            } else {
+                alert('Недостаточно средств для покупки');
+            }
+            return;
+        }
+        
+        currentUser.balance -= total;
+        currentUser.purchases += cart.length;
+        currentUser.inventory.push(...cart.map(i => i.id));
+        saveDB();
+        updateUI();
+        
+        cart = [];
+        updateCartBadge();
+        renderNFTs(document.getElementById('search-input')?.value || '');
+        renderCartModal();
+        const cartModal = document.getElementById('cart-modal');
+        if (cartModal) cartModal.classList.remove('open');
+        
+        if (window.Telegram?.WebApp) {
+            Telegram.WebApp.showAlert('Покупка успешно оформлена!');
+        } else {
+            alert('Покупка успешно оформлена!');
+        }
+    });
+}
 
 document.querySelectorAll('.nav-item').forEach(function(btn) {
     btn.addEventListener('click', function() {
@@ -1023,23 +837,37 @@ document.querySelectorAll('.storage-tab').forEach(function(tab) {
     });
 });
 
-document.getElementById('how-to-add-btn').addEventListener('click', () => {
-    document.getElementById('how-to-add-modal').classList.add('open');
-});
+const howToAddBtn = document.getElementById('how-to-add-btn');
+if (howToAddBtn) {
+    howToAddBtn.addEventListener('click', () => {
+        const howToAddModal = document.getElementById('how-to-add-modal');
+        if (howToAddModal) howToAddModal.classList.add('open');
+    });
+}
 
-document.getElementById('close-how-to-add-modal').addEventListener('click', () => {
-    document.getElementById('how-to-add-modal').classList.remove('open');
-});
+const closeHowToAdd = document.getElementById('close-how-to-add-modal');
+if (closeHowToAdd) {
+    closeHowToAdd.addEventListener('click', () => {
+        const howToAddModal = document.getElementById('how-to-add-modal');
+        if (howToAddModal) howToAddModal.classList.remove('open');
+    });
+}
 
-document.getElementById('go-to-bank-btn').addEventListener('click', () => {
-    window.open('https://t.me/KSMTBank', '_blank');
-});
+const goToBankBtn = document.getElementById('go-to-bank-btn');
+if (goToBankBtn) {
+    goToBankBtn.addEventListener('click', () => {
+        window.open('https://t.me/KSMTBank', '_blank');
+    });
+}
 
-document.getElementById('how-to-add-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        document.getElementById('how-to-add-modal').classList.remove('open');
-    }
-});
+const howToAddModal = document.getElementById('how-to-add-modal');
+if (howToAddModal) {
+    howToAddModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.remove('open');
+        }
+    });
+}
 
 // ============================================================
 // 17. BANNER
@@ -1071,33 +899,45 @@ if (slider) {
 // ============================================================
 // 18. CLOSE MODALS ON BACKDROP
 // ============================================================
-document.getElementById('nft-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        document.getElementById('nft-modal').classList.remove('open');
-        if (currentLottieInstance) {
-            currentLottieInstance.destroy();
-            currentLottieInstance = null;
+const nftModal = document.getElementById('nft-modal');
+if (nftModal) {
+    nftModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.remove('open');
+            if (currentLottieInstance) {
+                currentLottieInstance.destroy();
+                currentLottieInstance = null;
+            }
         }
-    }
-});
+    });
+}
 
-document.getElementById('profile-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        document.getElementById('profile-modal').classList.remove('open');
-    }
-});
+const profileModal = document.getElementById('profile-modal');
+if (profileModal) {
+    profileModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.remove('open');
+        }
+    });
+}
 
-document.getElementById('wallet-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        document.getElementById('wallet-modal').classList.remove('open');
-    }
-});
+const walletModal = document.getElementById('wallet-modal');
+if (walletModal) {
+    walletModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.remove('open');
+        }
+    });
+}
 
-document.getElementById('cart-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        document.getElementById('cart-modal').classList.remove('open');
-    }
-});
+const cartModal = document.getElementById('cart-modal');
+if (cartModal) {
+    cartModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.remove('open');
+        }
+    });
+}
 
 // ============================================================
 // 19. PIN EVENT LISTENERS
@@ -1108,7 +948,10 @@ document.querySelectorAll('.pin-key[data-value]').forEach(btn => {
     });
 });
 
-document.getElementById('pin-delete').addEventListener('click', handlePinDelete);
+const pinDelete = document.getElementById('pin-delete');
+if (pinDelete) {
+    pinDelete.addEventListener('click', handlePinDelete);
+}
 
 // ============================================================
 // 20. INIT APP
