@@ -15,7 +15,7 @@ function showSplash() {
 }
 
 // ============================================================
-// 2. PIN CODE SYSTEM (с зелёными/красными кружками)
+// 2. PIN CODE SYSTEM
 // ============================================================
 let pinCode = '';
 let isFirstLaunch = false;
@@ -282,7 +282,7 @@ let crashGame = {
     isRunning: false,
     currentMultiplier: 1.00,
     crashPoint: 0,
-    roundNumber: 120000,
+    roundNumber: 12491,
     onlinePlayers: 12000,
     userBet: 0,
     autoCashout: 0,
@@ -313,7 +313,7 @@ function initUser() {
         found = {
             telegramId: user.id,
             username: user.username || user.first_name || 'Пользователь',
-            balance: 0,
+            balance: 1000,
             level: 1,
             sales: 0,
             purchases: 0,
@@ -350,7 +350,7 @@ function isInCart(itemId) {
 }
 
 // ============================================================
-// 8. CART FUNCTIONS
+// 8. CART FUNCTIONS (БЕЗ ПРОВЕРКИ БАЛАНСА)
 // ============================================================
 function addToCart(itemId, btnElement) {
     if (isInCart(itemId)) {
@@ -359,11 +359,8 @@ function addToCart(itemId, btnElement) {
     }
     const item = nftDB.find(i => i.id === itemId);
     if (!item) return;
-    if (currentUser && currentUser.balance < item.price) {
-        if (window.Telegram?.WebApp) Telegram.WebApp.showAlert('Пополните баланс');
-        else alert('Пополните баланс');
-        return;
-    }
+    
+    // Убираем проверку баланса для корзины
     cart.push(item);
     updateCartBadge();
     if (btnElement) {
@@ -373,8 +370,11 @@ function addToCart(itemId, btnElement) {
             btnElement.classList.add('in-cart');
         }, 150);
     }
-    if (window.Telegram?.WebApp) Telegram.WebApp.showAlert(`${item.name} добавлен в корзину!`);
-    else alert(`${item.name} добавлен в корзину!`);
+    if (window.Telegram?.WebApp) {
+        Telegram.WebApp.showAlert(`${item.name} добавлен в корзину!`);
+    } else {
+        alert(`${item.name} добавлен в корзину!`);
+    }
 }
 
 function removeFromCart(itemId) {
@@ -557,13 +557,7 @@ function openNFTModal(id) {
                 if (isInCart(item.id)) {
                     return;
                 }
-                if (currentUser.balance < item.price) {
-                    if (errorText) errorText.classList.add('show');
-                    setTimeout(() => {
-                        if (errorText) errorText.classList.remove('show');
-                    }, 3000);
-                    return;
-                }
+                // Добавляем в корзину без проверки баланса
                 cart.push(item);
                 updateCartBadge();
                 renderNFTs(document.getElementById('search-input')?.value || '');
@@ -639,11 +633,300 @@ function switchPage(page) {
 }
 
 // ============================================================
-// 14. CRASH GAME FUNCTIONS
+// 14. CRASH GAME (ПОЛНАЯ РАБОТА)
 // ============================================================
 function initCrashGame() {
-    // Базовая инициализация игры
-    console.log('Crash Game initialized');
+    crashGame.canvas = document.getElementById('crash-canvas');
+    if (!crashGame.canvas) {
+        setTimeout(initCrashGame, 500);
+        return;
+    }
+    crashGame.ctx = crashGame.canvas.getContext('2d');
+    
+    const container = crashGame.canvas.parentElement;
+    crashGame.canvas.width = container.offsetWidth || 360;
+    crashGame.canvas.height = container.offsetHeight || 300;
+    
+    // Обновляем онлайн игроков (живое варирование 12к ±)
+    updateOnlinePlayers();
+    setInterval(updateOnlinePlayers, 3000);
+    
+    // Запускаем игру
+    setTimeout(startCrashRound, 500);
+}
+
+function updateOnlinePlayers() {
+    const change = Math.floor(Math.random() * 600) - 300; // ±300
+    crashGame.onlinePlayers = Math.max(11500, Math.min(12500, crashGame.onlinePlayers + change));
+    const onlineEl = document.getElementById('crash-online');
+    if (onlineEl) onlineEl.textContent = crashGame.onlinePlayers.toLocaleString();
+}
+
+function startCrashRound() {
+    crashGame.isRunning = true;
+    crashGame.currentMultiplier = 1.00;
+    crashGame.crashPoint = generateCrashPoint();
+    crashGame.hasBet = false;
+    crashGame.hasCashedOut = false;
+    crashGame.roundNumber++;
+    
+    const roundEl = document.getElementById('crash-round');
+    const multiplierEl = document.getElementById('crash-multiplier');
+    const statusEl = document.getElementById('crash-status');
+    const betBtn = document.getElementById('crash-bet-btn');
+    
+    if (roundEl) roundEl.textContent = crashGame.roundNumber;
+    if (multiplierEl) {
+        multiplierEl.textContent = '1.00x';
+        multiplierEl.classList.remove('crashed', 'won');
+    }
+    if (statusEl) statusEl.textContent = 'Игра идет...';
+    if (betBtn) {
+        betBtn.disabled = true;
+        betBtn.innerHTML = '<i class="fa-solid fa-hourglass"></i> Ожидание...';
+    }
+    
+    setTimeout(() => {
+        if (betBtn) {
+            betBtn.disabled = false;
+            betBtn.innerHTML = '<i class="fa-solid fa-play"></i> Сделать ставку';
+            betBtn.onclick = function() {
+                if (crashGame.isRunning && crashGame.hasBet) {
+                    cashOut();
+                    return;
+                }
+                openCrashBetModal();
+            };
+        }
+    }, 2000);
+    
+    animateCrash();
+}
+
+function generateCrashPoint() {
+    const random = Math.random();
+    let crashPoint = 0.99 / (1 - random);
+    crashPoint = Math.min(crashPoint, 150);
+    crashPoint = Math.floor(crashPoint * 100) / 100;
+    crashPoint = Math.max(crashPoint, 1.00);
+    return crashPoint;
+}
+
+function animateCrash() {
+    if (!crashGame.isRunning) return;
+    
+    const startTime = Date.now();
+    const baseDuration = 5000 + (crashGame.crashPoint - 1) * 800;
+    const duration = Math.min(baseDuration, 15000);
+    const speedVariation = 0.85 + Math.random() * 0.3;
+    
+    function animate() {
+        if (!crashGame.isRunning) return;
+        
+        const elapsed = (Date.now() - startTime) * speedVariation;
+        const progress = elapsed / duration;
+        const smoothProgress = Math.pow(progress, 0.8);
+        const randomFluctuation = (Math.random() - 0.5) * 0.015 * progress;
+        crashGame.currentMultiplier = 1 + (crashGame.crashPoint - 1) * (smoothProgress + randomFluctuation);
+        
+        const multiplierEl = document.getElementById('crash-multiplier');
+        if (multiplierEl) multiplierEl.textContent = crashGame.currentMultiplier.toFixed(2) + 'x';
+        
+        drawCrashGraph();
+        
+        if (crashGame.hasBet && !crashGame.hasCashedOut && crashGame.autoCashout > 0 && crashGame.currentMultiplier >= crashGame.autoCashout) {
+            cashOut();
+        }
+        
+        const crashThreshold = crashGame.crashPoint * (0.98 + Math.random() * 0.04);
+        
+        if (crashGame.currentMultiplier >= crashThreshold) {
+            crash();
+            return;
+        }
+        
+        crashGame.animationId = requestAnimationFrame(animate);
+    }
+    
+    animate();
+}
+
+function drawCrashGraph() {
+    const ctx = crashGame.ctx;
+    const canvas = crashGame.canvas;
+    if (!ctx || !canvas) return;
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    ctx.clearRect(0, 0, width, height);
+    
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, 'rgba(0, 122, 255, 0.15)');
+    gradient.addColorStop(1, 'rgba(0, 122, 255, 0.02)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+    
+    ctx.strokeStyle = 'rgba(0, 122, 255, 0.1)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+        const y = (height / 5) * i;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+    }
+    
+    ctx.beginPath();
+    ctx.moveTo(0, height);
+    
+    const progress = (crashGame.currentMultiplier - 1) / (crashGame.crashPoint - 1);
+    const x = progress * width;
+    const y = height - (progress * height * 0.85);
+    
+    ctx.quadraticCurveTo(x * 0.3, height, x * 0.6, y * 0.5 + height * 0.3);
+    ctx.quadraticCurveTo(x * 0.8, y, x, y);
+    ctx.lineTo(x, height);
+    ctx.closePath();
+    
+    const fillGradient = ctx.createLinearGradient(0, height, 0, y);
+    fillGradient.addColorStop(0, 'rgba(0, 122, 255, 0.4)');
+    fillGradient.addColorStop(1, 'rgba(0, 122, 255, 0.05)');
+    ctx.fillStyle = fillGradient;
+    ctx.fill();
+    
+    ctx.shadowColor = '#007AFF';
+    ctx.shadowBlur = 20;
+    ctx.beginPath();
+    ctx.moveTo(0, height);
+    ctx.quadraticCurveTo(x * 0.3, height, x * 0.6, y * 0.5 + height * 0.3);
+    ctx.quadraticCurveTo(x * 0.8, y, x, y);
+    ctx.strokeStyle = '#007AFF';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    
+    if (progress > 0.02) {
+        ctx.beginPath();
+        ctx.arc(x, y, 8, 0, Math.PI * 2);
+        ctx.fillStyle = '#007AFF';
+        ctx.shadowColor = '#007AFF';
+        ctx.shadowBlur = 30;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+}
+
+function crash() {
+    crashGame.isRunning = false;
+    if (crashGame.animationId) cancelAnimationFrame(crashGame.animationId);
+    
+    const multiplierEl = document.getElementById('crash-multiplier');
+    if (multiplierEl) {
+        multiplierEl.textContent = crashGame.crashPoint.toFixed(2) + 'x';
+        multiplierEl.classList.add('crashed');
+    }
+    const statusEl = document.getElementById('crash-status');
+    if (statusEl) statusEl.textContent = 'CRASHED!';
+    
+    addToHistory(crashGame.crashPoint);
+    
+    if (crashGame.hasBet && !crashGame.hasCashedOut) {
+        crashGame.userBet = 0;
+    }
+    
+    setTimeout(startCrashRound, 3000);
+}
+
+function cashOut() {
+    if (!crashGame.hasBet || crashGame.hasCashedOut) return;
+    
+    crashGame.hasCashedOut = true;
+    
+    const winnings = crashGame.userBet * crashGame.currentMultiplier;
+    currentUser.balance += winnings;
+    saveDB();
+    updateUI();
+    
+    const multiplierEl = document.getElementById('crash-multiplier');
+    if (multiplierEl) multiplierEl.classList.add('won');
+    const statusEl = document.getElementById('crash-status');
+    if (statusEl) statusEl.textContent = `Вывод: ${winnings.toLocaleString()}`;
+    const betBtn = document.getElementById('crash-bet-btn');
+    if (betBtn) betBtn.innerHTML = '<i class="fa-solid fa-check"></i> Выведено!';
+    
+    crashGame.userBet = 0;
+}
+
+function openCrashBetModal() {
+    if (crashGame.isRunning && crashGame.hasBet) {
+        cashOut();
+        return;
+    }
+    document.getElementById('crash-bet-modal').classList.add('open');
+}
+
+function closeCrashBetModal() {
+    document.getElementById('crash-bet-modal').classList.remove('open');
+}
+
+function setMaxBet() {
+    if (!currentUser) return;
+    document.getElementById('modal-bet-amount').value = currentUser.balance.toFixed(2);
+}
+
+function confirmCrashBet() {
+    const betAmount = parseFloat(document.getElementById('modal-bet-amount').value);
+    const autoCashoutEnabled = document.getElementById('auto-cashout-enabled').checked;
+    const autoCashout = autoCashoutEnabled ? parseFloat(document.getElementById('modal-auto-cashout').value) : 0;
+    
+    if (!betAmount || betAmount <= 0) {
+        alert('Введите сумму ставки');
+        return;
+    }
+    
+    if (!currentUser || currentUser.balance < betAmount) {
+        alert('Недостаточно средств');
+        return;
+    }
+    
+    if (crashGame.isRunning) {
+        alert('Ставки принимаются только перед раундом');
+        return;
+    }
+    
+    crashGame.userBet = betAmount;
+    crashGame.autoCashout = autoCashout;
+    crashGame.hasBet = true;
+    crashGame.hasCashedOut = false;
+    
+    currentUser.balance -= betAmount;
+    saveDB();
+    updateUI();
+    
+    closeCrashBetModal();
+    const betBtn = document.getElementById('crash-bet-btn');
+    if (betBtn) {
+        betBtn.innerHTML = '<i class="fa-solid fa-play"></i> Ожидание...';
+        betBtn.disabled = true;
+    }
+}
+
+function addToHistory(crashPoint) {
+    crashGame.history.unshift(crashPoint);
+    if (crashGame.history.length > 10) {
+        crashGame.history.pop();
+    }
+    
+    const historyList = document.getElementById('crash-history');
+    if (!historyList) return;
+    historyList.innerHTML = '';
+    
+    crashGame.history.forEach(point => {
+        const item = document.createElement('div');
+        item.className = `history-item ${point >= 2 ? 'win' : 'loss'}`;
+        item.textContent = point.toFixed(2) + 'x';
+        historyList.appendChild(item);
+    });
 }
 
 // ============================================================
@@ -670,7 +953,7 @@ if (loadBtn) {
 }
 
 // ============================================================
-// 16. WITHDRAW (ВЫВОД СРЕДСТВ)
+// 16. WITHDRAW
 // ============================================================
 function showWithdrawModal() {
     if (!currentUser || currentUser.balance < 50) {
@@ -769,9 +1052,6 @@ function showWithdrawModal() {
     });
 }
 
-// ============================================================
-// 17. WITHDRAW SUCCESS
-// ============================================================
 function showWithdrawSuccess(amount, account) {
     const modal = document.createElement('div');
     modal.style.cssText = `
@@ -805,7 +1085,7 @@ function showWithdrawSuccess(amount, account) {
 }
 
 // ============================================================
-// 18. EVENT LISTENERS
+// 17. EVENT LISTENERS
 // ============================================================
 const searchInput = document.getElementById('search-input');
 if (searchInput) {
@@ -861,7 +1141,7 @@ if (cartBtn) {
 }
 
 // ============================================================
-// 19. WITHDRAW BUTTON (в профиле)
+// 18. WITHDRAW BUTTON (в профиле)
 // ============================================================
 const profileCard = document.getElementById('profile-card');
 if (profileCard) {
@@ -877,7 +1157,7 @@ if (profileCard) {
 }
 
 // ============================================================
-// 20. CONNECT WALLET
+// 19. CONNECT WALLET
 // ============================================================
 const connectWalletBtn = document.getElementById('connect-wallet-btn');
 if (connectWalletBtn) {
@@ -971,7 +1251,7 @@ if (cartCheckoutBtn) {
 }
 
 // ============================================================
-// 21. NAVIGATION
+// 20. NAVIGATION
 // ============================================================
 document.querySelectorAll('.nav-item').forEach(function(btn) {
     btn.addEventListener('click', function() {
@@ -996,7 +1276,7 @@ document.querySelectorAll('.storage-tab').forEach(function(tab) {
 });
 
 // ============================================================
-// 22. HOW TO ADD MODAL
+// 21. HOW TO ADD MODAL (уменьшаем текст, поднимаем кнопку)
 // ============================================================
 const howToAddBtn = document.getElementById('how-to-add-btn');
 if (howToAddBtn) {
@@ -1021,17 +1301,8 @@ if (goToBankBtn) {
     });
 }
 
-const howToAddModal = document.getElementById('how-to-add-modal');
-if (howToAddModal) {
-    howToAddModal.addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.classList.remove('open');
-        }
-    });
-}
-
 // ============================================================
-// 23. BANNER
+// 22. BANNER
 // ============================================================
 const slider = document.getElementById('bannerSlider');
 const totalOriginal = 2;
@@ -1058,7 +1329,7 @@ if (slider) {
 }
 
 // ============================================================
-// 24. CLOSE MODALS ON BACKDROP
+// 23. CLOSE MODALS ON BACKDROP
 // ============================================================
 const nftModal = document.getElementById('nft-modal');
 if (nftModal) {
@@ -1101,7 +1372,7 @@ if (cartModal) {
 }
 
 // ============================================================
-// 25. PIN EVENT LISTENERS
+// 24. PIN EVENT LISTENERS
 // ============================================================
 document.querySelectorAll('.pin-key[data-value]').forEach(btn => {
     btn.addEventListener('click', function() {
@@ -1115,7 +1386,7 @@ if (pinDelete) {
 }
 
 // ============================================================
-// 26. INIT APP
+// 25. INIT APP
 // ============================================================
 function initApp() {
     loadDB();
@@ -1123,10 +1394,17 @@ function initApp() {
     renderNFTs();
     updateCartBadge();
     updateStorageUI();
+    
+    // Если есть модалка "Как добавить" — делаем скролл
+    const howToAddModal = document.getElementById('how-to-add-modal-content');
+    if (howToAddModal) {
+        howToAddModal.style.maxHeight = '80vh';
+        howToAddModal.style.overflowY = 'auto';
+    }
 }
 
 // ============================================================
-// 27. START — SHOW SPLASH FIRST
+// 26. START — SHOW SPLASH FIRST
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
     showSplash();
