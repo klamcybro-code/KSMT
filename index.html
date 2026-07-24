@@ -11,7 +11,61 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
-    <div id="app">
+    <!-- SPLASH SCREEN (Загрузка) -->
+    <div id="splash-screen">
+        <div class="splash-content">
+            <div class="splash-logo">K<span>SMT</span></div>
+            <div class="splash-loader">
+                <div class="loader-bar"></div>
+            </div>
+            <div class="splash-text">Загрузка...</div>
+        </div>
+    </div>
+
+    <!-- PIN CODE SCREEN -->
+    <div id="pin-screen" style="display:none;">
+        <div class="pin-container">
+            <div class="pin-header">
+                <div class="pin-logo">K<span>SMT</span></div>
+                <div class="pin-title" id="pin-title">Введите PIN-код</div>
+                <div class="pin-subtitle" id="pin-subtitle">Для входа в приложение</div>
+            </div>
+            <div class="pin-dots" id="pin-dots">
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+            <div class="pin-error" id="pin-error">Неверный PIN-код</div>
+            <div class="pin-keypad">
+                <div class="pin-row">
+                    <button class="pin-key" data-value="1">1</button>
+                    <button class="pin-key" data-value="2">2</button>
+                    <button class="pin-key" data-value="3">3</button>
+                </div>
+                <div class="pin-row">
+                    <button class="pin-key" data-value="4">4</button>
+                    <button class="pin-key" data-value="5">5</button>
+                    <button class="pin-key" data-value="6">6</button>
+                </div>
+                <div class="pin-row">
+                    <button class="pin-key" data-value="7">7</button>
+                    <button class="pin-key" data-value="8">8</button>
+                    <button class="pin-key" data-value="9">9</button>
+                </div>
+                <div class="pin-row">
+                    <button class="pin-key pin-key-empty"></button>
+                    <button class="pin-key" data-value="0">0</button>
+                    <button class="pin-key pin-key-delete" id="pin-delete">
+                        <i class="fa-solid fa-delete-left"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="app" style="display:none;">
         <!-- Top Bar -->
         <div id="top-bar">
             <div class="logo">K<span>SMT</span></div>
