@@ -1,0 +1,12 @@
+{
+  "name": "ksmt-market",
+  "version": "1.0.0",
+  "description": "KSMT NFT Marketplace",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
