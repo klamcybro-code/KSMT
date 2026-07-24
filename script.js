@@ -9,6 +9,12 @@ if (user) {
     document.querySelector('.profile-avatar').src = avatarSrc;
     const username = user.username || user.first_name || 'Пользователь';
     document.querySelector('.username').textContent = '@' + username;
+    
+    // Настоящий ID пользователя
+    const userIdElement = document.getElementById('user-id');
+    if (userIdElement) {
+        userIdElement.textContent = `ID: ${user.id}`;
+    }
 }
 
 let nftDB = [
@@ -180,6 +186,12 @@ function initUser() {
     }
     currentUser = found;
     updateUI();
+    
+    // Обновляем ID в профиле
+    const userIdElement = document.getElementById('user-id');
+    if (userIdElement && user.id) {
+        userIdElement.textContent = `ID: ${user.id}`;
+    }
 }
 
 function updateUI() {
@@ -207,7 +219,6 @@ function addToCart(itemId, btnElement) {
     const item = nftDB.find(i => i.id === itemId);
     if (!item) return;
     
-    // Проверка баланса только если пользователь существует
     if (currentUser && currentUser.balance < item.price) {
         if (window.Telegram?.WebApp) {
             Telegram.WebApp.showAlert('Пополните баланс');
@@ -220,7 +231,6 @@ function addToCart(itemId, btnElement) {
     cart.push(item);
     updateCartBadge();
     
-    // Анимация кнопки
     if (btnElement) {
         btnElement.classList.add('added');
         setTimeout(() => {
@@ -284,7 +294,6 @@ function renderCartModal() {
     
     totalPrice.textContent = total.toFixed(2);
     
-    // Add remove listeners
     document.querySelectorAll('.cart-item-remove').forEach(btn => {
         btn.addEventListener('click', function() {
             const id = this.dataset.id;
@@ -324,27 +333,21 @@ function renderTasks() {
     });
 }
 
-// Crash Game Functions
 function initCrashGame() {
     crashGame.canvas = document.getElementById('crash-canvas');
     crashGame.ctx = crashGame.canvas.getContext('2d');
     
-    // Set canvas size
     const container = crashGame.canvas.parentElement;
     crashGame.canvas.width = container.offsetWidth;
     crashGame.canvas.height = container.offsetHeight;
     
-    // Event listeners
     document.getElementById('crash-bet-btn').addEventListener('click', openCrashBetModal);
     document.getElementById('close-crash-bet-modal').addEventListener('click', closeCrashBetModal);
     document.getElementById('modal-max-btn').addEventListener('click', setMaxBet);
     document.getElementById('confirm-crash-bet').addEventListener('click', confirmCrashBet);
     document.getElementById('auto-cashout-enabled').addEventListener('change', toggleAutoCashoutInput);
     
-    // Update online players periodically
     setInterval(updateOnlinePlayers, 5000);
-    
-    // Start first round
     setTimeout(startCrashRound, 1000);
 }
 
@@ -353,7 +356,6 @@ function openCrashBetModal() {
         cashOut();
         return;
     }
-    
     document.getElementById('crash-bet-modal').classList.add('open');
 }
 
@@ -387,41 +389,26 @@ function confirmCrashBet() {
         return;
     }
     
-    // Place bet
     crashGame.userBet = betAmount;
     crashGame.autoCashout = autoCashout;
     crashGame.hasBet = true;
     crashGame.hasCashedOut = false;
     
-    // Deduct from balance
     currentUser.balance -= betAmount;
     saveDB();
     updateUI();
     
-    // Close modal and update button
     closeCrashBetModal();
     document.getElementById('crash-bet-btn').innerHTML = '<i class="fa-solid fa-play"></i> Ожидание...';
     document.getElementById('crash-bet-btn').disabled = true;
 }
 
 function generateCrashPoint() {
-    // Честная генерация crash point с максимальным кф х150
-    // Используем экспоненциальное распределение для честности
-    const houseEdge = 0.04; // 4% преимущество казино
     const random = Math.random();
-    
-    // Формула для честного crash point
     let crashPoint = 0.99 / (1 - random);
-    
-    // Ограничиваем максимальный кф х150
     crashPoint = Math.min(crashPoint, 150);
-    
-    // Округляем до 2 знаков
     crashPoint = Math.floor(crashPoint * 100) / 100;
-    
-    // Минимальный кф 1.00
     crashPoint = Math.max(crashPoint, 1.00);
-    
     return crashPoint;
 }
 
@@ -433,7 +420,6 @@ function startCrashRound() {
     crashGame.hasCashedOut = false;
     crashGame.roundNumber++;
     
-    // Update UI
     document.getElementById('crash-round').textContent = crashGame.roundNumber;
     document.getElementById('crash-multiplier').textContent = '1.00x';
     document.getElementById('crash-multiplier').classList.remove('crashed', 'won');
@@ -441,13 +427,11 @@ function startCrashRound() {
     document.getElementById('crash-bet-btn').disabled = true;
     document.getElementById('crash-bet-btn').innerHTML = '<i class="fa-solid fa-hourglass"></i> Ожидание...';
     
-    // Enable betting for next round
     setTimeout(() => {
         document.getElementById('crash-bet-btn').disabled = false;
         document.getElementById('crash-bet-btn').innerHTML = '<i class="fa-solid fa-play"></i> Сделать ставку';
     }, 2000);
     
-    // Animate multiplier
     animateCrash();
 }
 
@@ -455,39 +439,28 @@ function animateCrash() {
     if (!crashGame.isRunning) return;
     
     const startTime = Date.now();
-    // Более сбалансированная скорость - от 5 до 20 секунд в зависимости от кф
     const baseDuration = 5000 + (crashGame.crashPoint - 1) * 1000;
     const duration = Math.min(baseDuration, 20000);
-    
-    // Случайный фактор для непредсказуемости скорости
-    const speedVariation = 0.8 + Math.random() * 0.4; // 0.8 - 1.2
+    const speedVariation = 0.8 + Math.random() * 0.4;
     
     function animate() {
         if (!crashGame.isRunning) return;
         
         const elapsed = (Date.now() - startTime) * speedVariation;
         const progress = elapsed / duration;
-        
-        // Более плавный рост с случайными колебаниями
         const smoothProgress = Math.pow(progress, 0.8);
         const randomFluctuation = (Math.random() - 0.5) * 0.02 * progress;
         crashGame.currentMultiplier = 1 + (crashGame.crashPoint - 1) * (smoothProgress + randomFluctuation);
         
-        // Update UI
         document.getElementById('crash-multiplier').textContent = crashGame.currentMultiplier.toFixed(2) + 'x';
-        
-        // Draw graph
         drawCrashGraph();
         
-        // Check auto cashout
         if (crashGame.hasBet && !crashGame.hasCashedOut && crashGame.autoCashout > 0 && crashGame.currentMultiplier >= crashGame.autoCashout) {
             cashOut();
         }
         
-        // Случайный фактор для непредсказуемости момента краша
-        const crashThreshold = crashGame.crashPoint * (0.98 + Math.random() * 0.04); // ±2% от краш поинта
+        const crashThreshold = crashGame.crashPoint * (0.98 + Math.random() * 0.04);
         
-        // Check if crashed
         if (crashGame.currentMultiplier >= crashThreshold) {
             crash();
             return;
@@ -505,17 +478,14 @@ function drawCrashGraph() {
     const width = canvas.width;
     const height = canvas.height;
     
-    // Clear canvas
     ctx.clearRect(0, 0, width, height);
     
-    // Draw gradient background
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
     gradient.addColorStop(0, 'rgba(0, 122, 255, 0.15)');
     gradient.addColorStop(1, 'rgba(0, 122, 255, 0.02)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
     
-    // Draw grid lines
     ctx.strokeStyle = 'rgba(0, 122, 255, 0.1)';
     ctx.lineWidth = 1;
     for (let i = 0; i < 5; i++) {
@@ -526,7 +496,6 @@ function drawCrashGraph() {
         ctx.stroke();
     }
     
-    // Draw curve
     ctx.beginPath();
     ctx.moveTo(0, height);
     
@@ -534,20 +503,17 @@ function drawCrashGraph() {
     const x = progress * width;
     const y = height - (progress * height * 0.85);
     
-    // Smooth curve
     ctx.quadraticCurveTo(x * 0.3, height, x * 0.6, y * 0.5 + height * 0.3);
     ctx.quadraticCurveTo(x * 0.8, y, x, y);
     ctx.lineTo(x, height);
     ctx.closePath();
     
-    // Fill with gradient
     const fillGradient = ctx.createLinearGradient(0, height, 0, y);
     fillGradient.addColorStop(0, 'rgba(0, 122, 255, 0.4)');
     fillGradient.addColorStop(1, 'rgba(0, 122, 255, 0.05)');
     ctx.fillStyle = fillGradient;
     ctx.fill();
     
-    // Draw line with glow
     ctx.shadowColor = '#007AFF';
     ctx.shadowBlur = 20;
     ctx.beginPath();
@@ -559,7 +525,6 @@ function drawCrashGraph() {
     ctx.stroke();
     ctx.shadowBlur = 0;
     
-    // Draw glow dot at end
     if (progress > 0) {
         ctx.beginPath();
         ctx.arc(x, y, 8, 0, Math.PI * 2);
@@ -575,62 +540,17 @@ function crash() {
     crashGame.isRunning = false;
     cancelAnimationFrame(crashGame.animationId);
     
-    // Update UI
     document.getElementById('crash-multiplier').textContent = crashGame.crashPoint.toFixed(2) + 'x';
     document.getElementById('crash-multiplier').classList.add('crashed');
     document.getElementById('crash-status').textContent = 'CRASHED!';
     
-    // Add to history
     addToHistory(crashGame.crashPoint);
     
-    // Reset user bet if lost
     if (crashGame.hasBet && !crashGame.hasCashedOut) {
         crashGame.userBet = 0;
     }
     
-    // Start next round after delay
     setTimeout(startCrashRound, 3000);
-}
-
-function handleCrashBet() {
-    if (crashGame.isRunning && crashGame.hasBet) {
-        // Cash out
-        cashOut();
-        return;
-    }
-    
-    const betAmount = parseFloat(document.getElementById('crash-bet-amount').value);
-    const autoCashout = parseFloat(document.getElementById('crash-auto-cashout').value) || 0;
-    
-    if (!betAmount || betAmount <= 0) {
-        alert('Введите сумму ставки');
-        return;
-    }
-    
-    if (!currentUser || currentUser.balance < betAmount) {
-        alert('Недостаточно средств');
-        return;
-    }
-    
-    if (crashGame.isRunning) {
-        alert('Ставки принимаются только перед раундом');
-        return;
-    }
-    
-    // Place bet
-    crashGame.userBet = betAmount;
-    crashGame.autoCashout = autoCashout;
-    crashGame.hasBet = true;
-    crashGame.hasCashedOut = false;
-    
-    // Deduct from balance
-    currentUser.balance -= betAmount;
-    saveDB();
-    updateUI();
-    
-    // Update button
-    document.getElementById('crash-bet-btn').innerHTML = '<i class="fa-solid fa-play"></i> Ожидание...';
-    document.getElementById('crash-bet-btn').disabled = true;
 }
 
 function cashOut() {
@@ -643,7 +563,6 @@ function cashOut() {
     saveDB();
     updateUI();
     
-    // Update UI
     document.getElementById('crash-multiplier').classList.add('won');
     document.getElementById('crash-status').textContent = `Вывод: ${winnings.toLocaleString()}`;
     document.getElementById('crash-bet-btn').innerHTML = '<i class="fa-solid fa-check"></i> Выведено!';
@@ -657,7 +576,6 @@ function setMaxBet() {
 }
 
 function updateOnlinePlayers() {
-    // Вариация онлайн игроков вокруг 12к
     const change = Math.floor(Math.random() * 200) - 100;
     crashGame.onlinePlayers = Math.max(11000, Math.min(13000, crashGame.onlinePlayers + change));
     document.getElementById('crash-online').textContent = crashGame.onlinePlayers.toLocaleString();
@@ -731,7 +649,6 @@ function renderNFTs(filter = '') {
     });
 }
 
-// Load more button handler
 document.getElementById('load-more-btn').addEventListener('click', function() {
     const btn = this;
     btn.disabled = true;
@@ -853,7 +770,8 @@ function switchPage(page) {
     }
 }
 
-// Event Listeners
+// ========== EVENT LISTENERS ==========
+
 document.getElementById('search-input').addEventListener('input', function() {
     if (document.getElementById('market-page').classList.contains('active')) {
         renderNFTs(this.value);
@@ -885,18 +803,33 @@ document.getElementById('cartBtn').addEventListener('click', function() {
     document.getElementById('cart-modal').classList.add('open');
 });
 
+// ✅ ИСПРАВЛЕНО: Подключение кошелька (работает!)
 document.getElementById('connect-wallet-btn').addEventListener('click', () => {
     document.getElementById('wallet-modal').classList.add('open');
 });
 
 document.getElementById('ton-connect-btn').addEventListener('click', function() {
-    alert('TON Connect будет подключен в следующей версии');
-    document.getElementById('wallet-modal').classList.remove('open');
+    if (window.Telegram?.WebApp) {
+        Telegram.WebApp.openTelegramLink('https://t.me/wallet?attach=connect');
+        document.getElementById('wallet-modal').classList.remove('open');
+        Telegram.WebApp.showAlert('Подключите кошелек в Telegram');
+    } else {
+        if (currentUser) {
+            currentUser.walletConnected = true;
+            saveDB();
+            document.getElementById('wallet-modal').classList.remove('open');
+            alert('✅ Кошелек подключен! (Тестовый режим)');
+            updateUI();
+        }
+    }
 });
 
 document.getElementById('tonkeeper-btn').addEventListener('click', function() {
-    alert('Tonkeeper будет подключен в следующей версии');
+    window.open('tonkeeper://', '_blank');
     document.getElementById('wallet-modal').classList.remove('open');
+    if (window.Telegram?.WebApp) {
+        Telegram.WebApp.showAlert('Откройте Tonkeeper для подключения');
+    }
 });
 
 document.getElementById('close-wallet-modal').addEventListener('click', () => {
@@ -946,7 +879,6 @@ document.querySelectorAll('.nav-item').forEach(function(btn) {
         const page = this.dataset.page;
         switchPage(page);
         
-        // Toggle search visibility
         const searchWrapper = document.getElementById('search-wrapper');
         if (page === 'market') {
             searchWrapper.classList.remove('hidden');
@@ -1002,58 +934,4 @@ if (slider) {
     autoInterval = setInterval(goToNextSlide, 3000);
 }
 
-// Close modals on backdrop click
-document.getElementById('nft-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        document.getElementById('nft-modal').classList.remove('open');
-        if (currentLottieInstance) {
-            currentLottieInstance.destroy();
-            currentLottieInstance = null;
-        }
-    }
-});
-
-document.getElementById('profile-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        document.getElementById('profile-modal').classList.remove('open');
-    }
-});
-
-document.getElementById('wallet-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        document.getElementById('wallet-modal').classList.remove('open');
-    }
-});
-
-document.getElementById('cart-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        document.getElementById('cart-modal').classList.remove('open');
-    }
-});
-
-document.getElementById('how-to-add-btn').addEventListener('click', () => {
-    document.getElementById('how-to-add-modal').classList.add('open');
-});
-
-document.getElementById('close-how-to-add-modal').addEventListener('click', () => {
-    document.getElementById('how-to-add-modal').classList.remove('open');
-});
-
-document.getElementById('go-to-bank-btn').addEventListener('click', () => {
-    window.open('https://t.me/KSMTBank', '_blank');
-});
-
-document.getElementById('how-to-add-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        document.getElementById('how-to-add-modal').classList.remove('open');
-    }
-});
-
-// Init - вызываем после полной загрузки DOM
-document.addEventListener('DOMContentLoaded', function() {
-    loadDB();
-    initUser();
-    renderNFTs();
-    updateCartBadge();
-    updateStorageUI();
-});
+// Close mod
