@@ -1,0 +1,79 @@
+{
+  "users": [],
+  "nft": [
+    {
+      "id": "signetring-1505",
+      "name": "Signet Ring #1505",
+      "description": "An exclusive Signet Ring with the appearance Obsidian on a Onyx Black background with Mountain Lion icons.",
+      "price": 1.99,
+      "image": "https://nft.fragment.com/gift/signetring-1505.webp",
+      "lottie": "https://nft.fragment.com/gift/signetring-1505.lottie.json",
+      "attributes": [
+        {
+          "trait": "Model",
+          "value": "Obsidian"
+        },
+        {
+          "trait": "Backdrop",
+          "value": "Onyx Black"
+        },
+        {
+          "trait": "Symbol",
+          "value": "Mountain Lion"
+        }
+      ],
+      "owner": null
+    },
+    {
+      "id": "snoopcigar-75928",
+      "name": "Snoop Cigar #75928",
+      "description": "An exclusive Snoop Cigar with the appearance Gold on a White background with Party icons.",
+      "price": 2.49,
+      "image": "https://nft.fragment.com/gift/snoopcigar-75928.webp",
+      "lottie": "https://nft.fragment.com/gift/snoopcigar-75928.lottie.json",
+      "attributes": [
+        {
+          "trait": "Model",
+          "value": "Gold"
+        },
+        {
+          "trait": "Backdrop",
+          "value": "White"
+        },
+        {
+          "trait": "Symbol",
+          "value": "Party"
+        }
+      ],
+      "owner": null
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "name": "Подписаться на канал KSMT",
+      "reward": 0.5,
+      "link": "https://t.me/KSMT_community",
+      "completed": false
+    },
+    {
+      "id": 2,
+      "name": "Совершить покупку более 2.5 TON",
+      "reward": 0.3,
+      "link": "#",
+      "completed": false
+    },
+    {
+      "id": 3,
+      "name": "Выиграть в Crash более 5 раз подряд (кф не менее х2)",
+      "reward": 0.2,
+      "link": "#",
+      "completed": false
+    }
+  ],
+  "settings": {
+    "bankUsername": "@KSMTBank",
+    "channelUsername": "@KSMT_community",
+    "processingTime": "2 минуты"
+  }
+}
