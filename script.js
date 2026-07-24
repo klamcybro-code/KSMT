@@ -9,14 +9,13 @@ function showSplash() {
         splash.classList.add('fade-out');
         setTimeout(() => {
             splash.style.display = 'none';
-            // После загрузки показываем PIN
             checkPin();
         }, 800);
     }, 2200);
 }
 
 // ============================================================
-// 2. PIN CODE SYSTEM
+// 2. PIN CODE SYSTEM (с зелёными/красными кружками)
 // ============================================================
 let pinCode = '';
 let isFirstLaunch = false;
@@ -47,17 +46,21 @@ function checkPin() {
     
     pinScreen.style.display = 'flex';
     pinCode = '';
-    updatePinDots();
+    updatePinDots('');
     document.getElementById('pin-error').classList.remove('show');
 }
 
-function updatePinDots() {
+function updatePinDots(status = '') {
     const dots = document.querySelectorAll('.pin-dots .dot');
     dots.forEach((dot, index) => {
+        dot.classList.remove('filled', 'success', 'error');
         if (index < pinCode.length) {
             dot.classList.add('filled');
-        } else {
-            dot.classList.remove('filled');
+            if (status === 'success') {
+                dot.classList.add('success');
+            } else if (status === 'error') {
+                dot.classList.add('error');
+            }
         }
     });
 }
@@ -69,43 +72,47 @@ function handlePinInput(value) {
     if (pinCode.length >= 4) return;
     
     pinCode += value;
-    updatePinDots();
+    updatePinDots('');
     
     if (pinCode.length === 4) {
         const savedPin = getPinFromStorage();
         
         if (isFirstLaunch) {
-            // Сохраняем новый PIN
+            // Сохраняем новый PIN — зелёные кружки
             savePin(pinCode);
+            updatePinDots('success');
             setTimeout(() => {
                 document.getElementById('pin-screen').style.display = 'none';
                 document.getElementById('app').style.display = 'flex';
                 initApp();
-            }, 300);
+            }, 400);
         } else {
             // Проверяем PIN
             if (pinCode === savedPin) {
+                // Правильный PIN — зелёные кружки
+                updatePinDots('success');
                 setTimeout(() => {
                     document.getElementById('pin-screen').style.display = 'none';
                     document.getElementById('app').style.display = 'flex';
                     initApp();
-                }, 300);
+                }, 400);
             } else {
-                // Неверный PIN
+                // Неверный PIN — красные кружки + тряска
+                updatePinDots('error');
                 errorEl.textContent = '❌ Неверный PIN-код';
                 errorEl.classList.add('show');
+                
+                // Тряска кружков
                 document.querySelectorAll('.pin-dots .dot').forEach(dot => {
-                    dot.classList.add('error');
+                    dot.classList.add('shake');
+                    setTimeout(() => dot.classList.remove('shake'), 400);
                 });
+                
                 setTimeout(() => {
-                    document.querySelectorAll('.pin-dots .dot').forEach(dot => {
-                        dot.classList.remove('error');
-                    });
-                }, 400);
-                pinCode = '';
-                setTimeout(() => {
-                    updatePinDots();
-                }, 400);
+                    pinCode = '';
+                    updatePinDots('');
+                    errorEl.classList.remove('show');
+                }, 600);
             }
         }
     }
@@ -114,13 +121,13 @@ function handlePinInput(value) {
 function handlePinDelete() {
     if (pinCode.length > 0) {
         pinCode = pinCode.slice(0, -1);
-        updatePinDots();
+        updatePinDots('');
         document.getElementById('pin-error').classList.remove('show');
     }
 }
 
 // ============================================================
-// 3. TELEGRAM WEBAPP & USER (инициализация до PIN)
+// 3. TELEGRAM WEBAPP & USER
 // ============================================================
 const tg = window.Telegram.WebApp;
 tg.ready();
@@ -129,7 +136,6 @@ tg.expand();
 const user = tg.initDataUnsafe?.user;
 if (user) {
     const avatarSrc = user.photo_url || 'https://i.pravatar.cc/80';
-    // Отложим обновление аватара до загрузки DOM
     setTimeout(() => {
         const avatar = document.getElementById('avatar');
         const profileAvatar = document.querySelector('.profile-avatar');
@@ -146,7 +152,7 @@ if (user) {
 }
 
 // ============================================================
-// 4. NFT DATABASE
+// 4. NFT DATABASE (сокращённо)
 // ============================================================
 let nftDB = [
     {
@@ -642,7 +648,7 @@ function switchPage(page) {
 // 14. CRASH GAME FUNCTIONS (сокращённо)
 // ============================================================
 function initCrashGame() {
-    // Базовая инициализация, если нужно
+    // Базовая инициализация
 }
 
 // ============================================================
@@ -669,7 +675,150 @@ if (loadBtn) {
 }
 
 // ============================================================
-// 16. EVENT LISTENERS
+// 16. WITHDRAW (ВЫВОД СРЕДСТВ)
+// ============================================================
+function showWithdrawModal() {
+    if (!currentUser || currentUser.balance < 50) {
+        if (window.Telegram?.WebApp) {
+            Telegram.WebApp.showAlert('❌ Минимальная сумма вывода — 50 звезд');
+        } else {
+            alert('❌ Минимальная сумма вывода — 50 звезд');
+        }
+        return;
+    }
+    
+    // Создаём модалку вывода
+    const modal = document.createElement('div');
+    modal.id = 'withdraw-modal';
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.85); backdrop-filter: blur(40px);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 99999;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: rgba(255,255,255,0.06); border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); padding: 32px; max-width: 340px; width: 90%; backdrop-filter: blur(40px); box-shadow: 0 30px 100px rgba(0,0,0,0.7);">
+            <h3 style="color: #fff; font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 8px;">Вывод средств</h3>
+            <p style="color: #8E8E93; text-align: center; font-size: 14px; margin-bottom: 20px;">Выберите аккаунт для вывода</p>
+            
+            <div style="margin-bottom: 16px;">
+                <label style="color: #8E8E93; font-size: 13px; font-weight: 500; display: block; margin-bottom: 6px;">Аккаунт</label>
+                <select id="withdraw-account" style="width: 100%; padding: 14px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; color: #fff; font-size: 15px; outline: none;">
+                    <option value="telegram" style="background: #1a1a1a; color: #fff;">Telegram</option>
+                    <option value="tonkeeper" style="background: #1a1a1a; color: #fff;">Tonkeeper</option>
+                    <option value="wallet" style="background: #1a1a1a; color: #fff;">TON Wallet</option>
+                </select>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="color: #8E8E93; font-size: 13px; font-weight: 500; display: block; margin-bottom: 6px;">Сумма (от 50 звезд)</label>
+                <input type="number" id="withdraw-amount" min="50" max="${currentUser.balance}" step="1" placeholder="50" style="width: 100%; padding: 14px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; color: #fff; font-size: 15px; outline: none;">
+                <div style="display: flex; justify-content: space-between; margin-top: 6px;">
+                    <span style="color: #8E8E93; font-size: 12px;">Доступно: ${currentUser.balance}</span>
+                    <button id="withdraw-max-btn" style="color: #007AFF; font-size: 12px; font-weight: 600; background: none; border: none; cursor: pointer;">MAX</button>
+                </div>
+            </div>
+            
+            <button id="withdraw-confirm-btn" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #fff, #ccc); border: none; border-radius: 18px; color: #000; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.3s; margin-bottom: 10px;">
+                <i class="fa-solid fa-check"></i> Вывести
+            </button>
+            
+            <button id="withdraw-close-btn" style="width: 100%; padding: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 18px; color: #8E8E93; font-size: 14px; font-weight: 500; cursor: pointer;">Отмена</button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // MAX кнопка
+    document.getElementById('withdraw-max-btn').addEventListener('click', function() {
+        const input = document.getElementById('withdraw-amount');
+        if (input && currentUser) input.value = currentUser.balance;
+    });
+    
+    // Подтверждение вывода
+    document.getElementById('withdraw-confirm-btn').addEventListener('click', function() {
+        const amount = parseInt(document.getElementById('withdraw-amount').value);
+        const account = document.getElementById('withdraw-account').value;
+        
+        if (!amount || amount < 50) {
+            if (window.Telegram?.WebApp) {
+                Telegram.WebApp.showAlert('❌ Минимальная сумма — 50 звезд');
+            } else {
+                alert('❌ Минимальная сумма — 50 звезд');
+            }
+            return;
+        }
+        
+        if (amount > currentUser.balance) {
+            if (window.Telegram?.WebApp) {
+                Telegram.WebApp.showAlert('❌ Недостаточно средств');
+            } else {
+                alert('❌ Недостаточно средств');
+            }
+            return;
+        }
+        
+        // Выполняем вывод
+        currentUser.balance -= amount;
+        currentUser.sales += 1;
+        saveDB();
+        updateUI();
+        
+        // Закрываем модалку
+        modal.remove();
+        
+        // Показываем успешное окошко
+        showWithdrawSuccess(amount, account);
+    });
+    
+    // Закрытие
+    document.getElementById('withdraw-close-btn').addEventListener('click', function() {
+        modal.remove();
+    });
+    
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) modal.remove();
+    });
+}
+
+// ============================================================
+// 17. WITHDRAW SUCCESS (Окошко "Выполнено")
+// ============================================================
+function showWithdrawSuccess(amount, account) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.85); backdrop-filter: blur(40px);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 99999;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: rgba(255,255,255,0.06); border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); padding: 40px 32px; max-width: 340px; width: 90%; backdrop-filter: blur(40px); box-shadow: 0 30px 100px rgba(0,0,0,0.7); text-align: center;">
+            <div style="font-size: 64px; margin-bottom: 16px;">✅</div>
+            <h3 style="color: #34C759; font-size: 24px; font-weight: 700; margin-bottom: 8px;">Выполнено!</h3>
+            <p style="color: #8E8E93; font-size: 14px; line-height: 1.6; margin-bottom: 4px;">
+                Вывод <strong style="color: #fff;">${amount.toLocaleString()}</strong> звезд на <strong style="color: #fff;">${account}</strong>
+            </p>
+            <p style="color: #8E8E93; font-size: 13px; margin-bottom: 20px;">Средства будут зачислены в ближайшее время</p>
+            <button id="success-close-btn" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #fff, #ccc); border: none; border-radius: 18px; color: #000; font-size: 16px; font-weight: 700; cursor: pointer;">Отлично!</button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    document.getElementById('success-close-btn').addEventListener('click', function() {
+        modal.remove();
+    });
+    
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) modal.remove();
+    });
+}
+
+// ============================================================
+// 18. EVENT LISTENERS
 // ============================================================
 const searchInput = document.getElementById('search-input');
 if (searchInput) {
@@ -724,6 +873,27 @@ if (cartBtn) {
     });
 }
 
+// ============================================================
+// 19. WITHDRAW BUTTON (в профиле)
+// ============================================================
+// Добавляем кнопку вывода в профиль
+const profileCard = document.getElementById('profile-card');
+if (profileCard) {
+    const walletBtn = profileCard.querySelector('.wallet-btn');
+    if (walletBtn) {
+        // Создаём кнопку вывода
+        const withdrawBtn = document.createElement('button');
+        withdrawBtn.className = 'wallet-btn';
+        withdrawBtn.style.cssText = 'margin-top: 12px; background: linear-gradient(135deg, #FFD700, #FFA500); border: none; color: #000;';
+        withdrawBtn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Вывести средства';
+        withdrawBtn.addEventListener('click', showWithdrawModal);
+        walletBtn.parentNode.insertBefore(withdrawBtn, walletBtn.nextSibling);
+    }
+}
+
+// ============================================================
+// 20. CONNECT WALLET (TON Connect)
+// ============================================================
 const connectWalletBtn = document.getElementById('connect-wallet-btn');
 if (connectWalletBtn) {
     connectWalletBtn.addEventListener('click', () => {
@@ -815,6 +985,9 @@ if (cartCheckoutBtn) {
     });
 }
 
+// ============================================================
+// 21. NAVIGATION
+// ============================================================
 document.querySelectorAll('.nav-item').forEach(function(btn) {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.nav-item').forEach(function(b) {
@@ -837,6 +1010,9 @@ document.querySelectorAll('.storage-tab').forEach(function(tab) {
     });
 });
 
+// ============================================================
+// 22. HOW TO ADD MODAL
+// ============================================================
 const howToAddBtn = document.getElementById('how-to-add-btn');
 if (howToAddBtn) {
     howToAddBtn.addEventListener('click', () => {
@@ -870,7 +1046,7 @@ if (howToAddModal) {
 }
 
 // ============================================================
-// 17. BANNER
+// 23. BANNER
 // ============================================================
 const slider = document.getElementById('bannerSlider');
 const totalOriginal = 2;
@@ -897,7 +1073,7 @@ if (slider) {
 }
 
 // ============================================================
-// 18. CLOSE MODALS ON BACKDROP
+// 24. CLOSE MODALS ON BACKDROP
 // ============================================================
 const nftModal = document.getElementById('nft-modal');
 if (nftModal) {
@@ -940,7 +1116,7 @@ if (cartModal) {
 }
 
 // ============================================================
-// 19. PIN EVENT LISTENERS
+// 25. PIN EVENT LISTENERS
 // ============================================================
 document.querySelectorAll('.pin-key[data-value]').forEach(btn => {
     btn.addEventListener('click', function() {
@@ -954,7 +1130,7 @@ if (pinDelete) {
 }
 
 // ============================================================
-// 20. INIT APP
+// 26. INIT APP
 // ============================================================
 function initApp() {
     loadDB();
@@ -965,7 +1141,7 @@ function initApp() {
 }
 
 // ============================================================
-// 21. START — SHOW SPLASH FIRST
+// 27. START — SHOW SPLASH FIRST
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
     showSplash();
