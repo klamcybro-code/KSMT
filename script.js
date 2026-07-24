@@ -133,7 +133,6 @@ let cart = [];
 let currentStorageTab = 'sale';
 let currentLottieInstance = null;
 let currentModalItem = null;
-let isFirstLoad = true;
 
 const tasksDB = [
     { id: 1, name: 'Подписаться на канал KSMT', reward: 43, link: 'https://t.me/KSMT_community', completed: false },
@@ -450,6 +449,7 @@ function switchPage(page) {
     const storagePage = document.getElementById('storage-page');
     const gamesPage = document.getElementById('games-page');
     const tasksPage = document.getElementById('tasks-page');
+    const searchWrapper = document.getElementById('search-wrapper');
     
     // Скрываем все
     marketPage.classList.remove('active');
@@ -460,23 +460,23 @@ function switchPage(page) {
     // Показываем нужную
     if (page === 'market') {
         marketPage.classList.add('active');
-        // ✅ Принудительно перерисовываем карточки при переходе на маркет
-        renderNFTs(document.getElementById('search-input').value);
-        // Показываем поиск
-        document.getElementById('search-wrapper').classList.remove('hidden');
+        // Принудительно перерисовываем карточки при переходе на маркет
+        setTimeout(() => {
+            renderNFTs(document.getElementById('search-input').value);
+        }, 50);
+        searchWrapper.classList.remove('hidden');
     } else if (page === 'storage') {
         storagePage.classList.add('active');
         updateStorageUI();
-        // Скрываем поиск
-        document.getElementById('search-wrapper').classList.add('hidden');
+        searchWrapper.classList.add('hidden');
     } else if (page === 'games') {
         gamesPage.classList.add('active');
         setTimeout(initCrashGame, 100);
-        document.getElementById('search-wrapper').classList.add('hidden');
+        searchWrapper.classList.add('hidden');
     } else if (page === 'tasks') {
         tasksPage.classList.add('active');
         renderTasks();
-        document.getElementById('search-wrapper').classList.add('hidden');
+        searchWrapper.classList.add('hidden');
     }
 }
 
@@ -513,7 +513,7 @@ document.getElementById('cartBtn').addEventListener('click', function() {
     document.getElementById('cart-modal').classList.add('open');
 });
 
-// ✅ ИСПРАВЛЕНО: Подключение кошелька
+// Подключение кошелька
 document.getElementById('connect-wallet-btn').addEventListener('click', () => {
     document.getElementById('wallet-modal').classList.add('open');
 });
@@ -946,10 +946,14 @@ function addToHistory(crashPoint) {
 
 // ========== INIT ==========
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadDB();
-    initUser();
-    renderNFTs();
-    updateCartBadge();
-    updateStorageUI();
-});
+// Убеждаемся, что при загрузке страницы карточки отображаются
+loadDB();
+initUser();
+renderNFTs();
+updateCartBadge();
+updateStorageUI();
+
+// Дополнительно перерисовываем через 100ms, если вдруг не отобразились
+setTimeout(() => {
+    renderNFTs(document.getElementById('search-input').value);
+}, 100);
