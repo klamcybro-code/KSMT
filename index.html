@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KSMT — Маркет</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <div id="app">
+        <!-- Top Bar -->
+        <div id="top-bar">
+            <div class="logo">K<span>SMT</span></div>
+            <div id="avatar-wrapper"><img id="avatar" src="" alt="Avatar"></div>
+            <div class="balance"><i class="fa-solid fa-star"></i> 0</div>
+        </div>
+        
+        <!-- Header -->
+        <div id="section-header">
+            <h2>Trending</h2>
+            <div class="actions">
+                <button class="action-btn" id="channelBtn"><i class="fa-solid fa-bullhorn"></i></button>
+                <button class="action-btn" id="cartBtn"><i class="fa-solid fa-cart-shopping"></i><div id="cart-badge">0</div></button>
+            </div>
+        </div>
+        
+        <!-- Banner -->
+        <div id="banner-carousel">
+            <div class="banner-slider" id="bannerSlider">
+                <div class="banner-slide"><div class="banner-inner" style="background:linear-gradient(to right,#ef4444,#f97316);"><div class="banner-text"><h2>Cowboy Tournament</h2><p>Вступить в битву</p></div><i class="banner-icon fa-solid fa-gift"></i></div></div>
+                <div class="banner-slide"><div class="banner-inner" style="background:linear-gradient(to right,#3b82f6,#8b5cf6);"><div class="banner-text"><h2>Salle Gift</h2><p>Продавай подарки</p></div><i class="banner-icon fa-solid fa-tag"></i></div></div>
+                <div class="banner-slide clone"><div class="banner-inner" style="background:linear-gradient(to right,#ef4444,#f97316);"><div class="banner-text"><h2>Cowboy Tournament</h2><p>Вступить в битву</p></div><i class="banner-icon fa-solid fa-gift"></i></div></div>
+            </div>
+        </div>
+        
+        <!-- Search -->
+        <div id="search-wrapper"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="search-input" placeholder="Поиск NFT по названию..."></div>
+        
+        <!-- Market Page -->
+        <div id="market-page" class="active">
+            <div id="nft-grid"></div>
+            <button class="load-more-btn" id="load-more-btn">
+                <i class="fa-solid fa-rotate"></i> Загрузить еще
+            </button>
+        </div>
+        
+        <!-- Games Page -->
+        <div id="games-page">
+            <div class="crash-container">
+                <div class="crash-header">
+                    <div class="crash-online">
+                        <i class="fa-solid fa-users"></i>
+                        <span id="crash-online">0</span> онлайн
+                    </div>
+                    <div class="crash-round">Раунд #<span id="crash-round">1</span></div>
+                </div>
+                
+                <div class="crash-graph-container">
+                    <canvas id="crash-canvas"></canvas>
+                    <div class="crash-multiplier" id="crash-multiplier">1.00x</div>
+                    <div class="crash-status" id="crash-status">Ожидание...</div>
+                </div>
+                
+                <div class="crash-bet-section">
+                    <button class="crash-bet-btn" id="crash-bet-btn">
+                        <i class="fa-solid fa-play"></i> Сделать ставку
+                    </button>
+                </div>
+                
+                <div class="crash-history">
+                    <div class="history-title">История</div>
+                    <div class="history-list" id="crash-history"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tasks Page -->
+        <div id="tasks-page">
+            <div class="tasks-container">
+                <div id="tasks-list"></div>
+            </div>
+        </div>
+        
+        <!-- Storage Page -->
+        <div id="storage-page">
+            <div class="storage-tabs">
+                <div class="storage-tab active" data-tab="sale">На продаже <span id="sale-count">(0)</span></div>
+                <div class="storage-tab" data-tab="storage">В хранилище <span id="storage-count">(0)</span></div>
+            </div>
+            <div id="storage-content">
+                <div class="storage-info">
+                    <div class="empty-text" id="storage-empty-text">Нет подарков на продаже</div>
+                    <img src="https://iili.io/CB5avxn.gif" alt="empty">
+                    <button class="how-to-add-btn" id="how-to-add-btn">Как добавить подарки?</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bottom Nav -->
+        <div id="bottom-nav">
+            <div class="nav-item active" data-page="market"><svg viewBox="0 0 24 24"><path d="M6 2L3 6V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><span>Маркет</span></div>
+            <div class="nav-item" data-page="games"><svg viewBox="0 0 24 24"><path d="M15 4h-4a8 8 0 0 0-8 8v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a8 8 0 0 0-8-8z"/><circle cx="12" cy="12" r="4"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/></svg><span>Игры</span></div>
+            <div class="nav-item" data-page="tasks"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><polyline points="9 12 12 15 15 9"/></svg><span>Задания</span></div>
+            <div class="nav-item" data-page="storage"><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="4" y1="10" x2="20" y2="10"/></svg><span>Хранилище</span></div>
+        </div>
+    </div>
+    
+    <!-- NFT Modal -->
+    <div id="nft-modal">
+        <div id="nft-modal-content">
+            <button class="close-btn" id="close-nft-modal"><i class="fa-solid fa-xmark"></i></button>
+            <div class="nft-lottie" id="modal-lottie"></div>
+            <div class="nft-title" id="modal-title">Название</div>
+            <div class="nft-id-modal" id="modal-id">ID</div>
+            <div class="nft-desc" id="modal-desc">Описание</div>
+            <div class="nft-attributes" id="modal-attributes"></div>
+            <div class="nft-price-modal" id="modal-price"><i class="fa-solid fa-star"></i> <span>0</span></div>
+            <div class="error-text" id="error-text"><i class="fa-solid fa-triangle-exclamation"></i> Пополните баланс</div>
+            <button class="buy-btn" id="modal-buy-btn">Купить</button>
+        </div>
+    </div>
+    
+    <div id="profile-modal"><div id="profile-card"><button class="close-btn" id="close-profile"><i class="fa-solid fa-xmark"></i></button><img class="profile-avatar" src="" alt="Avatar"><div class="username">@username</div><div class="user-id">ID: 123456789</div><div class="stats"><div class="stat"><div class="value">12</div><div class="label">Продаж</div></div><div class="stat"><div class="value">8</div><div class="label">Покупок</div></div></div><div class="level">Уровень 3</div><button class="wallet-btn" id="connect-wallet-btn"><i class="fa-solid fa-wallet"></i> Подключить кошелек</button></div></div>
+    
+    <div id="wallet-modal"><div id="wallet-modal-content"><h3>Подключить кошелек</h3><p>Выберите способ подключения</p><button class="wallet-option" id="ton-connect-btn"><i class="fa-brands fa-telegram"></i> TON Connect</button><button class="wallet-option" id="tonkeeper-btn"><i class="fa-solid fa-mobile-screen"></i> Tonkeeper</button><button class="close-wallet-btn" id="close-wallet-modal">Отмена</button></div></div>
+    
+    <!-- Cart Modal -->
+    <div id="cart-modal">
+        <div id="cart-modal-content">
+            <button class="close-btn" id="close-cart-modal"><i class="fa-solid fa-xmark"></i></button>
+            <h3>Корзина</h3>
+            <div id="cart-items"></div>
+            <div id="cart-empty" style="display:none;"><i class="fa-solid fa-cart-shopping"></i><p>Корзина пуста</p></div>
+            <div id="cart-total">
+                <span class="total-label">Итого:</span>
+                <span class="total-value"><i class="fa-solid fa-coins"></i> <span id="total-price">0</span> TON</span>
+            </div>
+            <button id="cart-checkout-btn">Оформить покупку</button>
+        </div>
+    </div>
+    
+    <!-- How to Add Modal -->
+    <div id="how-to-add-modal">
+        <div id="how-to-add-modal-content">
+            <button class="close-btn" id="close-how-to-add-modal"><i class="fa-solid fa-xmark"></i></button>
+            <div class="how-to-add-header">
+                <img src="photo/how_nft.png" alt="Как добавить NFT" class="how-to-add-image">
+            </div>
+            <div class="how-to-add-info">
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </div>
+                    <div class="info-text">
+                        <div class="info-title">Перейдите к боту по кнопке ниже</div>
+                        <div class="info-subtitle">Юзернейм бота <strong>@KSMTBank</strong></div>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fa-solid fa-gift"></i>
+                    </div>
+                    <div class="info-text">
+                        <div class="info-title">Отправьте подарок боту</div>
+                        <div class="info-subtitle">Количество не ограничено</div>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <div class="info-text">
+                        <div class="info-title">Подарок появится в «Хранилище»</div>
+                        <div class="info-subtitle">Обработка займёт не более 3 минут</div>
+                    </div>
+                </div>
+            </div>
+            <div class="scam-warning">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <div class="scam-text">
+                    <span class="scam-title">Beware of scams</span>
+                    <span class="scam-subtitle">Ignore any links or instructions sent via private messages.</span>
+                </div>
+            </div>
+            <button class="add-gift-btn" id="go-to-bank-btn">
+                <i class="fa-brands fa-telegram"></i> Добавить подарок
+            </button>
+        </div>
+    </div>
+    
+    <!-- Crash Bet Modal -->
+    <div id="crash-bet-modal">
+        <div id="crash-bet-modal-content">
+            <button class="close-btn" id="close-crash-bet-modal"><i class="fa-solid fa-xmark"></i></button>
+            <h3>Сделать ставку</h3>
+            <div class="bet-input-group">
+                <div class="bet-label">Сумма ставки</div>
+                <div class="bet-input-wrapper">
+                    <input type="number" id="modal-bet-amount" placeholder="0.00" min="0.01" step="0.01">
+                    <button class="bet-max-btn" id="modal-max-btn">MAX</button>
+                </div>
+            </div>
+            <div class="auto-cashout-toggle">
+                <div class="toggle-label">Авто-вывод</div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="auto-cashout-enabled">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="bet-auto-cashout" id="modal-auto-cashout-group" style="display:none;">
+                <div class="bet-label">Вывод на</div>
+                <input type="number" id="modal-auto-cashout" placeholder="2.00" min="1.01" step="0.01">
+            </div>
+            <button class="confirm-bet-btn" id="confirm-crash-bet">
+                <i class="fa-solid fa-check"></i> Подтвердить ставку
+            </button>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
