@@ -313,7 +313,7 @@ function initUser() {
         found = {
             telegramId: user.id,
             username: user.username || user.first_name || 'Пользователь',
-            balance: 1000,
+            balance: 0,
             level: 1,
             sales: 0,
             purchases: 0,
